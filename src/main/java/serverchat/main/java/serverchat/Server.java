@@ -39,7 +39,6 @@ public class Server
                 Socket socket = serverSocket.accept();
                 System.out.println("Received connection from client");
                 threadPool.execute(new ClientConnection(socket));
-                //new ClientConnection(socket).run();
             }
         }
         catch(IOException e)

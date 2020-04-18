@@ -7,7 +7,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 
 //Instance of a connection between server and client
-public class ClientConnection implements Runnable
+public class ClientConnection implements Runnable, Message
 {
     private Socket socket;
 
@@ -28,8 +28,17 @@ public class ClientConnection implements Runnable
             String inputLine = "";
             String outputLine = "";
 
-            while ((inputLine = inputStream.readLine()) != null) {
+            while ((inputLine = inputStream.readLine()) != null)
+            {
                 outputLine = inputLine + "\r";
+
+                //** EXAMPLE CODE
+                Message encoded = MessageFactory.encode(MessageType.CHAT, outputLine);
+                Message decoded = MessageFactory.decode(((EncodedMessage)encoded).encodedMessage());
+
+                //USE THIS METHOD TO GET THE BYTES TO SEND THROUGH THE SOCKET
+                // ((EncodedMessage)encoded).encodedMessage();
+
                 outputStream.println(outputLine);
                 if (inputLine.contains("Log off"))
                 {
