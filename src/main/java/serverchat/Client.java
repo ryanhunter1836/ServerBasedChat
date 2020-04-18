@@ -10,8 +10,8 @@ public class Client {
 		Socket clientSocket = new Socket("localhost", 80); //host and port number subject to change
 		
 		//New object ClientConnection that takes clientSocket
-		ClientConnection a1 = new ClientConnection(clientSocket);
-		a1.run(); //runs input and output
+		ClientConnection client1 = new ClientConnection(clientSocket);
+		client1.run(); //runs input and output
 	
   clientSocket.close(); //terminate the connection
 	}
