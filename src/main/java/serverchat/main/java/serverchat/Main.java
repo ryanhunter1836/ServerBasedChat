@@ -18,6 +18,8 @@ public class Main
         {
             int portNumber = Integer.parseInt(args[1]);
             System.out.println("Client connecting on port " + portNumber);
+            Client client = new Client(portNumber);
+            client.startClient();
         }
     }
 }
