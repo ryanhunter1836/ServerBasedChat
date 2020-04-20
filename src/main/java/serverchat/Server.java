@@ -7,12 +7,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.io.*;
+import java.util.Hashtable;
 
 //Code is based off the documentation: https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ExecutorService.html
 
 public class Server
 {
     int portNumber;
+    private int XRES;
     private boolean listening = false;
     private ServerSocket serverSocket = null;
 
@@ -62,12 +64,17 @@ public class Server
             System.out.println(e.toString());
         }
     }
-//Using Challenge
+    
+    //Using Challenge
     public boolean challenge(DataInputStream inServer, DataOutputStream outServer) throws Exception {
     	int rand = (int)Math.random(); //generates a random number to confirm
+    	String key = ""; // need to figure out how to generate or find key
+    	
+    	initialHash1(rand + key);
+    	int RES = hash1(rand + key);
     	outServer.writeUTF("Challenge key" + rand);
     	
-    	if(inServer.readInt() == rand) {
+    	if(inServer.readInt() == rand && XRES == RES) {
     		outServer.writeUTF("CONNECTED TO SERVER"); //CONNECTED
     		return true;
     	}else {
@@ -76,6 +83,30 @@ public class Server
     	}
     
     }
+    
+//	  A3 algorithm as defined in the instructions    
+//    private int A3(int randomNumber, String key) {
+//    	
+//    	int RES = hash1(randomNumber + key);
+//    	
+//    	return RES;
+//    }
+    
+    // To be used to determine initial XRES to be compared later
+    private void initialHash1(String key)
+    {
+    	XRES = hash1(key);
+    }
+    
+    // A3: Hashing function from key
+    private int hash1(String key)
+    {	
+    	// super basic implementation, will probably change to account for collision
+    	int res = key.hashCode();
+    	
+    	return res;
+    }
+    
     
     //Call the stop method to gracefully shutdown the server
     public void stop()
