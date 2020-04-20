@@ -21,4 +21,6 @@ public interface Message
         HISTORY_REQ,
         HISTORY_RESP
     };
+
+    public int PacketLength = 2048;
 }

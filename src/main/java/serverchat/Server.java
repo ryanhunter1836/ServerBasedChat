@@ -1,8 +1,7 @@
 package main.java.serverchat;
 
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -10,16 +9,20 @@ import java.io.*;
 import java.util.Hashtable;
 
 //Code is based off the documentation: https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ExecutorService.html
+//UDP Server sample code: https://www.baeldung.com/udp-in-java
 
-public class Server
+public class Server implements Message
 {
-    int portNumber;
     private String XRES;
     private boolean listening = false;
-    private ServerSocket serverSocket = null;
+    //UDP socket used for authentication
+    private DatagramSocket serverSocket = null;
+    int portNumber;
 
+    //Thread pool to hold all of the TCP client connections
     private final ExecutorService threadPool;
 
+    //UDP authentication server
     public Server(int port)
     {
         portNumber = port;
@@ -33,16 +36,29 @@ public class Server
     {
         listening = true;
         try {
-            serverSocket = new ServerSocket(portNumber);
-            System.out.println("Server Started");
+            serverSocket = new DatagramSocket(portNumber);
+            System.out.println("Authentication Server Listening");
 
             //Welcoming socket that accepts connections from a client then spins off into separate thread
             while(listening)
             {
-                Socket socket = serverSocket.accept();
-                DataInputStream inServer = new DataInputStream(socket.getInputStream());
-                DataOutputStream outServer = new DataOutputStream(socket.getOutputStream());
-                
+                byte[] buffer = new byte[Message.PacketLength];
+                DatagramPacket packet = new DatagramPacket(buffer, Message.PacketLength);
+                serverSocket.receive(packet);
+                System.out.println("Received connection from client");
+
+                //Decode the packet
+                //DecodedMessage message = (DecodedMessage)MessageFactory.decode(packet.getData());
+
+                //Get the message type, message, and destination routing details
+                //Message.MessageType messageType = message.messageType();
+                //String messageContent = message.message();
+
+                int clientPortNum = packet.getPort();
+                InetAddress clientAddress = packet.getAddress();
+
+                //Go through the authentication with the client
+                /*
                 if(inServer.readUTF().equalsIgnoreCase("hello")) {
                 	//CHALLENGE
                 	if(!challenge(inServer, outServer))
@@ -53,10 +69,11 @@ public class Server
                 		outServer.writeUTF("AUTH_SUCC");
                 	}
                 }
+                */
                
-                
-                System.out.println("Received connection from client");
-                threadPool.execute(new ClientConnection(socket));
+                //If client authentication is successful, spawn a new thread for the TCP connection
+                //NOTE: NEED TO REPLACE PORT NUMBER WITH A RANDOM PORT NUMBER
+                //threadPool.execute(new ClientConnection(500));
             }
         }
         catch(IOException e)
@@ -64,7 +81,7 @@ public class Server
             System.out.println(e.toString());
         }
     }
-    
+
     //Using Challenge
     public boolean challenge(DataInputStream inServer, DataOutputStream outServer) throws Exception {
     	int rand = (int)Math.random(); //generates a random number to confirm
