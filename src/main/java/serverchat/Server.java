@@ -14,7 +14,7 @@ import java.util.Hashtable;
 public class Server
 {
     int portNumber;
-    private int XRES;
+    private String XRES;
     private boolean listening = false;
     private ServerSocket serverSocket = null;
 
@@ -70,8 +70,8 @@ public class Server
     	int rand = (int)Math.random(); //generates a random number to confirm
     	String key = ""; // need to figure out how to generate or find key
     	
-    	initialHash1(rand + key);
-    	int RES = hash1(rand + key);
+    	initialHash1(rand + key); // get XRES to be compared to user RES
+    	String RES = hash1(rand + key); // get RES
     	outServer.writeUTF("Challenge key" + rand);
     	
     	if(inServer.readInt() == rand && XRES == RES) {
@@ -84,14 +84,6 @@ public class Server
     
     }
     
-//	  A3 algorithm as defined in the instructions    
-//    private int A3(int randomNumber, String key) {
-//    	
-//    	int RES = hash1(randomNumber + key);
-//    	
-//    	return RES;
-//    }
-    
     // To be used to determine initial XRES to be compared later
     private void initialHash1(String key)
     {
@@ -99,10 +91,11 @@ public class Server
     }
     
     // A3: Hashing function from key
-    private int hash1(String key)
+    private String hash1(String key)
     {	
     	// super basic implementation, will probably change to account for collision
-    	int res = key.hashCode();
+    	MD5 m = new MD5();
+    	String res = m.getMD5(key);
     	
     	return res;
     }
