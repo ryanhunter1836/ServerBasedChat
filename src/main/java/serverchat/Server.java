@@ -6,6 +6,7 @@ import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.io.*;
 
 //Code is based off the documentation: https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ExecutorService.html
 
@@ -26,7 +27,7 @@ public class Server
     }
 
     //Call the start method to start the server
-    public void start()
+    public void start() throws Exception
     {
         listening = true;
         try {
@@ -37,6 +38,21 @@ public class Server
             while(listening)
             {
                 Socket socket = serverSocket.accept();
+                DataInputStream inServer = new DataInputStream(socket.getInputStream());
+                DataOutputStream outServer = new DataOutputStream(socket.getOutputStream());
+                
+                if(inServer.readUTF().equalsIgnoreCase("hello")) {
+                	//CHALLENGE
+                	if(!challenge(inServer, outServer))
+                	{	
+                		outServer.writeUTF("AUTH_FAIL");
+                		break;
+                	}else {
+                		outServer.writeUTF("AUTH_SUCC");
+                	}
+                }
+               
+                
                 System.out.println("Received connection from client");
                 threadPool.execute(new ClientConnection(socket));
             }
@@ -46,7 +62,21 @@ public class Server
             System.out.println(e.toString());
         }
     }
-
+//Using Challenge
+    public boolean challenge(DataInputStream inServer, DataOutputStream outServer) throws Exception {
+    	int rand = (int)Math.random(); //generates a random number to confirm
+    	outServer.writeUTF("Challenge key" + rand);
+    	
+    	if(inServer.readInt() == rand) {
+    		outServer.writeUTF("CONNECTED TO SERVER"); //CONNECTED
+    		return true;
+    	}else {
+    		
+    		return false;
+    	}
+    
+    }
+    
     //Call the stop method to gracefully shutdown the server
     public void stop()
     {
@@ -76,4 +106,3 @@ public class Server
         }
     }
 }
-
