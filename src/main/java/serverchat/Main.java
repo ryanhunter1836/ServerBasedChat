@@ -10,7 +10,15 @@ public class Main
             int portNumber = Integer.parseInt(args[1]);
             System.out.println("Starting server on port " + portNumber);
             Server server = new Server(portNumber);
-            server.start();
+            try
+            {
+                server.start();
+            }
+            catch(Exception e)
+            {
+
+            }
+
         }
 
         //Run as a client
@@ -19,7 +27,14 @@ public class Main
             int portNumber = Integer.parseInt(args[1]);
             System.out.println("Client connecting on port " + portNumber);
             Client client = new Client(portNumber);
-            client.startClient();
+            try
+            {
+                client.startClient();
+            }
+            catch(Exception e)
+            {
+
+            }
         }
     }
 }

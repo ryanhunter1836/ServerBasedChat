@@ -4,16 +4,18 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.ServerSocket;
 import java.net.Socket;
 
 //Instance of a connection between server and client
 public class ClientConnection implements Runnable, Message
 {
+    private int portNumber;
     private Socket socket;
 
-    public ClientConnection(Socket socket)
+    public ClientConnection(int portNumber)
     {
-        this.socket = socket;
+        this.portNumber = portNumber;
     }
 
     //Required for the runnable interface
@@ -21,6 +23,12 @@ public class ClientConnection implements Runnable, Message
     {
         try
         {
+            //Setup the listening socket
+            ServerSocket listeningSocket = new ServerSocket(portNumber);
+            //Accept the connection from the client
+            socket = listeningSocket.accept();
+
+            System.out.println("Received connection from client on port " + portNumber);
             //Set up input and output byte streams
             BufferedReader inputStream = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             PrintWriter outputStream = new PrintWriter(socket.getOutputStream(), true);
