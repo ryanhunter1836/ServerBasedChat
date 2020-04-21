@@ -1,42 +1,44 @@
 package main.java.serverchat;
 
-import java.io.*;
-import java.net.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
 
 //Instance of a connection between server and client
 public class ClientConnection implements Runnable, Message
 {
+    private int portNumber;
     private Socket socket;
-    public String userName;
-    
-    public ClientConnection(Socket socket)
-    {
-        this.socket = socket;
-    }
 
-    public String getUserName() {
-    	return this.userName;
+    public ClientConnection(int portNumber)
+    {
+        this.portNumber = portNumber;
     }
 
     //Required for the runnable interface
     public void run()
     {
         try
-        {	
+        {
+            //Setup the listening socket
+            ServerSocket listeningSocket = new ServerSocket(portNumber);
+            //Accept the connection from the client
+            socket = listeningSocket.accept();
+
+            System.out.println("Received connection from client on port " + portNumber);
             //Set up input and output byte streams
             BufferedReader inputStream = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             PrintWriter outputStream = new PrintWriter(socket.getOutputStream(), true);
 
             String inputLine = "";
             String outputLine = "";
-            
-            System.out.print("What is your user name? ");
-            this.userName = inputStream.readLine();
-            
-            while (true)
+
+            while ((inputLine = inputStream.readLine()) != null)
             {
-                outputLine =getUserName()+": "+ inputLine + "\r";
-                
+                outputLine = inputLine + "\r";
 
                 //** EXAMPLE CODE
                 Message encoded = MessageFactory.encode(MessageType.CHAT, outputLine);
@@ -44,10 +46,8 @@ public class ClientConnection implements Runnable, Message
 
                 //USE THIS METHOD TO GET THE BYTES TO SEND THROUGH THE SOCKET
                 // ((EncodedMessage)encoded).encodedMessage();
-               
+
                 outputStream.println(outputLine);
-                
-                
                 if (inputLine.contains("Log off"))
                 {
                     break;

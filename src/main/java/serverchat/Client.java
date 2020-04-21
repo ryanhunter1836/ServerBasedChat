@@ -1,8 +1,7 @@
 package main.java.serverchat;
-	
+
 import java.net.*;
 import java.io.*;
-
 
 public class Client {
 	 int portNumber;
@@ -21,3 +20,4 @@ public class Client {
 		clientSocket.close(); //terminate the connection
 	}
 }
+
