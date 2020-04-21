@@ -68,13 +68,17 @@ public class Server
     //Using Challenge
     public boolean challenge(DataInputStream inServer, DataOutputStream outServer) throws Exception {
     	int rand = (int)Math.random(); //generates a random number to confirm
-    	String key = ""; // need to figure out how to generate or find key
+    	// output rand to client
+    	// get key from database
     	
-    	initialHash1(rand + key); // get XRES to be compared to user RES
-    	String RES = hash1(rand + key); // get RES
+    	XRES = hash1(rand + key); // get XRES to be compared to user RES
+    	
+    	// get client input of rand + key
+    	String RES = hash1(/*client input*/); // get RES
+    	
     	outServer.writeUTF("Challenge key" + rand);
     	
-    	if(inServer.readInt() == rand && XRES == RES) {
+    	if(inServer.readInt() == rand && XRES.equals(RES)) {
     		outServer.writeUTF("CONNECTED TO SERVER"); //CONNECTED
     		return true;
     	}else {
@@ -82,12 +86,6 @@ public class Server
     		return false;
     	}
     
-    }
-    
-    // To be used to determine initial XRES to be compared later
-    private void initialHash1(String key)
-    {
-    	XRES = hash1(key);
     }
     
     // A3: Hashing function from key
