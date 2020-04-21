@@ -1,3 +1,5 @@
+package main.java.serverchat;
+	
 import java.net.*;
 import java.io.*;
 
