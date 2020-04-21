@@ -1,109 +1,71 @@
 package main.java.serverchat;
 
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+
 import java.io.*;
+import java.net.*;
 
-//Code is based off the documentation: https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ExecutorService.html
-
-public class Server
+//Instance of a connection between server and client
+public class ClientConnection implements Runnable, Message
 {
-    int portNumber;
-    private boolean listening = false;
-    private ServerSocket serverSocket = null;
-
-    private final ExecutorService threadPool;
-
-    public Server(int port)
+    private Socket socket;
+    public String userName;
+    
+    public ClientConnection(Socket socket)
     {
-        portNumber = port;
-
-        //Create the thread pool
-        threadPool = Executors.newFixedThreadPool(10);
+        this.socket = socket;
     }
 
-    //Call the start method to start the server
-    public void start() throws Exception
-    {
-        listening = true;
-        try {
-            serverSocket = new ServerSocket(portNumber);
-            System.out.println("Server Started");
+    public String getUserName() {
+    	return this.userName;
+    }
 
-            //Welcoming socket that accepts connections from a client then spins off into separate thread
-            while(listening)
+    //Required for the runnable interface
+    public void run()
+    {
+        try
+        {	
+            //Set up input and output byte streams
+            BufferedReader inputStream = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            PrintWriter outputStream = new PrintWriter(socket.getOutputStream(), true);
+
+            String inputLine = "";
+            String outputLine = "";
+            
+            System.out.print("What is your user name? ");
+            this.userName = inputStream.readLine();
+            
+            while (true)
             {
-                Socket socket = serverSocket.accept();
-                DataInputStream inServer = new DataInputStream(socket.getInputStream());
-                DataOutputStream outServer = new DataOutputStream(socket.getOutputStream());
+                outputLine =getUserName()+": "+ inputLine + "\r";
                 
-                if(inServer.readUTF().contains("hello")) {
-                	//CHALLENGE
-                	if(!challenge(inServer, outServer))
-                	{	
-                		outServer.writeUTF("AUTH_FAIL: Authorization process failed"); //AUTH_FAIL
-                		break;
-                	}else {
-                		outServer.writeUTF("AUTH_SUCCESS: Authorization process succeeded"); //AUTH_SUCCESS
-                	}
-                }
-              
-                //CONNECTED
-                System.out.println("CONNECTED: Received connection from client");
-                threadPool.execute(new ClientConnection(socket));
-            }
-        }
-        catch(IOException e)
-        {
-            System.out.println(e.toString());
-        }
-    }
-    
-//Using Challenge
-    public boolean challenge(DataInputStream inServer, DataOutputStream outServer) throws Exception {
-    	int rand = (int)Math.random(); //generates a random number to confirm
-    	outServer.writeUTF("Challenge key" + rand);
-    	
-    	if(inServer.readUTF().contains(rand+"")) {
-    		outServer.writeUTF("CONNECTED TO SERVER"); //CONNECTED
-    		return true;
-    	}else {
-    		
-    		return false;
-    	}
-    
-    }
-    
-    //Call the stop method to gracefully shutdown the server
-    public void stop()
-    {
-        shutdownAndAwaitTermination(threadPool);
-    }
 
-    //Dispose of the thread pool and close any lingering connections.  Copied from documentation
-    private void  shutdownAndAwaitTermination(ExecutorService pool)
-    {
-        pool.shutdown(); // Disable new tasks from being submitted
-        try {
-            // Wait a while for existing tasks to terminate
-            if (!pool.awaitTermination(60, TimeUnit.SECONDS))
-            {
-                pool.shutdownNow();
-                // Cancel currently executing tasks
-                // Wait a while for tasks to respond to being cancelled
-                if (!pool.awaitTermination(60, TimeUnit.SECONDS))
-                    System.err.println("Pool did not terminate");
+                //** EXAMPLE CODE
+                Message encoded = MessageFactory.encode(MessageType.CHAT, outputLine);
+                Message decoded = MessageFactory.decode(((EncodedMessage)encoded).encodedMessage());
+
+                //USE THIS METHOD TO GET THE BYTES TO SEND THROUGH THE SOCKET
+                // ((EncodedMessage)encoded).encodedMessage();
+               
+                outputStream.println(outputLine);
+                
+                
+                if (inputLine.contains("Log off"))
+                {
+                    break;
+                }
+                //Exit if the server is stopped and interrupts the thread
+                if(Thread.interrupted())
+                {
+                    break;
+                }
             }
-        } catch (InterruptedException ie)
+            System.out.println("Closing connection");
+            socket.close();
+            inputStream.close();
+        }
+        catch (IOException e)
         {
-            // (Re-)Cancel if current thread also interrupted
-            pool.shutdownNow();
-            // Preserve interrupt status
-            Thread.currentThread().interrupt();
+            System.out.println(e);
         }
     }
 }
