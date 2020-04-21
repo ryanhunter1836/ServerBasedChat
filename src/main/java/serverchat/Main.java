@@ -1,8 +1,6 @@
-package main.java.serverchat;
-
 public class Main
 {
-    public static void main(String[] args)
+    public static void main(String[] args) throws Exception
     {
         //Run as a server
         if(args[0].contains("server"))
@@ -18,6 +16,7 @@ public class Main
         {
             int portNumber = Integer.parseInt(args[1]);
             System.out.println("Client connecting on port " + portNumber);
+            (new Client(portNumber)).startClient();
         }
     }
 }
