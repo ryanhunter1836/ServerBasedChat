@@ -1,11 +1,8 @@
 package main.java.serverchat;
 
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.net.*;
+import java.util.concurrent.*;
 import java.io.*;
 
 //Code is based off the documentation: https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ExecutorService.html
@@ -25,7 +22,55 @@ public class Server
         //Create the thread pool
         threadPool = Executors.newFixedThreadPool(10);
     }
-
+    
+    public void helloWait() throws Exception{
+    	DatagramSocket ds = new DatagramSocket(portNumber);
+    	
+    	byte[] receive = new byte[1000];
+    	DatagramPacket helloReceive = null;
+		DatagramPacket sendChallenge=null;
+		
+    	System.out.println("port number: "+ portNumber);
+		
+    	while(true) {
+    		helloReceive = new DatagramPacket(receive, receive.length);
+    		
+    		ds.receive(helloReceive);
+    		
+    		 String dataString =  new String(helloReceive.getData(), 0, helloReceive.getLength());
+    		 System.out.println(dataString);
+    			
+    		if(dataString.equals("hello")) {
+    			System.out.println("received hello");  
+    			
+    		   	//CHALLENGE
+    			int rand = (int)(Math.random()*100); //generates a random number to confirm    			
+    			receive = (rand+"").getBytes();
+    			sendChallenge = new DatagramPacket(receive, receive.length);
+    			sendChallenge.setAddress(helloReceive.getAddress());
+    			sendChallenge.setPort(helloReceive.getPort());
+    			System.out.println("Sending CHALLENGE");
+    			ds.send(sendChallenge);
+    			
+    			//Receiving RESPONSE
+    			helloReceive = new DatagramPacket(receive, receive.length);
+        		ds.receive(helloReceive);
+        		dataString =  new String(helloReceive.getData(), 0, helloReceive.getLength());
+        		
+        		if(dataString.equals(rand+"")) {
+    				System.out.println("AUTH_SUCCESS: Authorization process completed");
+    				start(); //START TCP connection
+    				
+    			}else {
+    				System.out.println("AUTH_FAIL: Authorization process failed");
+    				break;
+    			}
+    		
+    		
+    		}
+    	}
+    }
+    
     //Call the start method to start the server
     public void start() throws Exception
     {
@@ -40,18 +85,7 @@ public class Server
                 Socket socket = serverSocket.accept();
                 DataInputStream inServer = new DataInputStream(socket.getInputStream());
                 DataOutputStream outServer = new DataOutputStream(socket.getOutputStream());
-                
-                if(inServer.readUTF().contains("hello")) {
-                	//CHALLENGE
-                	if(!challenge(inServer, outServer))
-                	{	
-                		outServer.writeUTF("AUTH_FAIL: Authorization process failed"); //AUTH_FAIL
-                		listening=false;
-                		break;
-                	}else {
-                		outServer.writeUTF("AUTH_SUCCESS: Authorization process succeeded"); //AUTH_SUCCESS
-                	}
-                }
+        
               
                 //CONNECTED
                 System.out.println("CONNECTED: Received connection from client");
@@ -62,21 +96,6 @@ public class Server
         {
             System.out.println(e.toString());
         }
-    }
-    
-//Using Challenge
-    public boolean challenge(DataInputStream inServer, DataOutputStream outServer) throws Exception {
-    	int rand = (int)Math.random(); //generates a random number to confirm
-    	outServer.writeUTF("Challenge key" + rand);
-    	
-    	if(inServer.readUTF().contains(rand+"")) {
-    		outServer.writeUTF("CONNECTED TO SERVER"); //CONNECTED
-    		return true;
-    	}else {
-    		
-    		return false;
-    	}
-    
     }
     
     //Call the stop method to gracefully shutdown the server
