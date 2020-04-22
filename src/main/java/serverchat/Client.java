@@ -48,6 +48,15 @@ public class Client {
         		DatagramPacket clientResponse = new DatagramPacket(buffer, buffer.length, clientIP, portNumber);
         		clientUDP.send(clientResponse);
         		
+        		buffer = new byte[1000];
+        		clientReceive = new DatagramPacket(buffer2, buffer2.length);
+        		clientUDP.receive(clientReceive);
+           		dataString =  new String(clientReceive.getData(), 0, clientReceive.getLength()) ;	
+        		
+        		if(dataString.contentEquals("AUTH_SUCC")) {
+        			System.out.println("SUCCESS");
+        			clientAccepted();
+        		}
         	}
         }
 	}
