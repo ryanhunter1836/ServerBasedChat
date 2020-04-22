@@ -59,6 +59,12 @@ public class Server
         		
         		if(dataString.equals(rand+"")) {
     				System.out.println("AUTH_SUCCESS: Authorization process completed");
+    				receive = ("AUTH_SUCC").getBytes();
+    				sendChallenge = new DatagramPacket(receive, receive.length);
+        			sendChallenge.setAddress(helloReceive.getAddress());
+        			sendChallenge.setPort(helloReceive.getPort());
+        			
+        			ds.send(sendChallenge); //Send AUTH_SUCC to Client
     				start(); //START TCP connection
     				
     			}else {
