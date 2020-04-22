@@ -1,5 +1,6 @@
 package main.java.serverchat.database;
 
+import main.java.serverchat.SecretKeyGenerator;
 import main.java.serverchat.database.Database;
 
 import org.bson.Document;
@@ -14,14 +15,15 @@ class DatabaseExample {
         Database db = new Database();
         Document clientA, clientB, clientC;
         String sessionIDA, sessionIDB;
+        SecretKeyGenerator keyGen = new SecretKeyGenerator();
 
         System.out.println("Create clients A, B, and C. Returns true on success, false on error.");
-        System.out.println(db.createClient("Client-ID-A", "somekey"));
-        System.out.println(db.createClient("Client-ID-B", "somekey"));
-        System.out.println(db.createClient("Client-ID-C", "somekey"));
+        System.out.println(db.createClient("Client-ID-A", keyGen.keyToString(keyGen.generateKey())));
+        System.out.println(db.createClient("Client-ID-B", keyGen.keyToString(keyGen.generateKey())));
+        System.out.println(db.createClient("Client-ID-C", keyGen.keyToString(keyGen.generateKey())));
 
         System.out.println("\nAttempt to create client C again, but already exists.");
-        System.out.println(db.createClient("Client-ID-C", "somekey"));
+        System.out.println(db.createClient("Client-ID-C", keyGen.keyToString(keyGen.generateKey())));
 
         System.out.println("\nGet Client A information.");
         clientA = db.getClient("Client-ID-A");
