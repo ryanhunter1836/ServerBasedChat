@@ -103,6 +103,16 @@ public class Server
             System.out.println(e.toString());
         }
     }
+  
+    // A3: Hashing function from key
+    private String hash1(String key)
+    {
+        // super basic implementation, will probably change to account for collision
+        MD5 m = new MD5();
+        String res = m.getMD5(key);
+
+        return res;
+    }
     
     //Call the stop method to gracefully shutdown the server
     public void stop()

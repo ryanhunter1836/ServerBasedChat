@@ -2,7 +2,7 @@ package main.java.serverchat;
 
 public class Main
 {
-    public static void main(String[] args) throws Exception
+    public static void main(String[] args)
     {
         //Run as a server
         if(args[0].contains("server"))
@@ -10,7 +10,15 @@ public class Main
             int portNumber = Integer.parseInt(args[1]);
             System.out.println("Starting server on port " + portNumber);
             Server server = new Server(portNumber);
-            server.start();
+            try
+            {
+                server.start();
+            }
+            catch(Exception e)
+            {
+
+            }
+
         }
 
         //Run as a client
@@ -18,7 +26,15 @@ public class Main
         {
             int portNumber = Integer.parseInt(args[1]);
             System.out.println("Client connecting on port " + portNumber);
-            (new Client(portNumber)).startClient();
+            Client client = new Client(portNumber);
+            try
+            {
+                client.startClient();
+            }
+            catch(Exception e)
+            {
+
+            }
         }
     }
 }
