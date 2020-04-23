@@ -75,39 +75,50 @@ public class Server
     				System.out.println("AUTH_FAIL: Authorization process failed");
     				break;
     			}
-    		
-    		
     		}
     	}
     }
-    
     //Call the start method to start the server
     public void start() throws Exception
     {
+    	
         listening = true;
         try {
             serverSocket = new ServerSocket(portNumber);
             System.out.println("Server Started");
-
+          
+            //CONNECTED
+            System.out.println("CONNECTED: Received connection from client");
+            
             //Welcoming socket that accepts connections from a client then spins off into separate thread
             while(listening)
             {
-                Socket socket = serverSocket.accept();
-                DataInputStream inServer = new DataInputStream(socket.getInputStream());
-                DataOutputStream outServer = new DataOutputStream(socket.getOutputStream());
-        
-              
-                //CONNECTED
-                System.out.println("CONNECTED: Received connection from client");
-                threadPool.execute(new ClientConnection(socket));
+                Socket socket = serverSocket.accept(); //accepts request
+                
+                //Reading from the server
+            	BufferedReader fromClient = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            	
+            	//writing to the server
+            	PrintWriter outWrite = new PrintWriter(socket.getOutputStream(), true);
+                 
+            	String inputLine = fromClient.readLine();
+            	
+            	if(fromClient.readLine()!=null) {
+            		System.out.println(inputLine);
+            	}
+                outWrite.println(inputLine);
+                outWrite.flush();
+                
+                threadPool.execute(new ClientConnection(socket, ""));
             }
+            stop();
         }
         catch(IOException e)
         {
             System.out.println(e.toString());
         }
     }
-  
+    
     // A3: Hashing function from key
     private String hash1(String key)
     {
