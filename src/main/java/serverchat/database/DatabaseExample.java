@@ -1,6 +1,7 @@
 package main.java.serverchat.database;
 
 import main.java.serverchat.SecretKeyGenerator;
+
 import main.java.serverchat.database.Database;
 
 import org.bson.Document;

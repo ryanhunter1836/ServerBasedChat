@@ -47,6 +47,7 @@ public class Server
     			int rand = (int)(Math.random()*100); //generates a random number to confirm    			
     			receive = (rand+"").getBytes();
     			String XRES = hash1(rand+"");
+
     			sendChallenge = new DatagramPacket(receive, receive.length);
     			sendChallenge.setAddress(helloReceive.getAddress());
     			sendChallenge.setPort(helloReceive.getPort());
@@ -60,6 +61,7 @@ public class Server
         		String RES = hash1(dataString);
         		
         		if(RES.equals(XRES)) {
+
     				System.out.println("AUTH_SUCCESS: Authorization process completed");
     				receive = ("AUTH_SUCC").getBytes();
     				sendChallenge = new DatagramPacket(receive, receive.length);
