@@ -33,4 +33,14 @@ public class SecretKeyGenerator {
 		
 		return encodedKey;
 	}
+
+	// A3: Hashing function from key
+	public static String hash1(String key)
+	{
+		// super basic implementation, will probably change to account for collision
+		MD5 m = new MD5();
+		String res = m.getMD5(key);
+
+		return res;
+	}
 }

@@ -1,132 +1,162 @@
 package main.java.serverchat;
 
-import java.util.*;
 import java.net.*;
 import java.util.concurrent.*;
 import java.io.*;
 
-//Code is based off the documentation: https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ExecutorService.html
-
-public class Server
+public class Server implements Message
 {
     int portNumber;
     private boolean listening = false;
-    private ServerSocket serverSocket = null;
+    private DatagramSocket ds;
 
     private final ExecutorService threadPool;
 
     public Server(int port)
     {
         portNumber = port;
-
         //Create the thread pool
         threadPool = Executors.newFixedThreadPool(10);
     }
-    
-    public void helloWait() throws Exception{
-    	DatagramSocket ds = new DatagramSocket(portNumber);
-    	
-    	byte[] receive = new byte[1000];
-    	DatagramPacket helloReceive = null;
-		DatagramPacket sendChallenge=null;
-		
-    	System.out.println("port number: "+ portNumber);
-		
-    	while(true) {
-    		helloReceive = new DatagramPacket(receive, receive.length);
-    		
-    		ds.receive(helloReceive);
-    		
-    		 String dataString =  new String(helloReceive.getData(), 0, helloReceive.getLength());
-    		 System.out.println(dataString);
-    			
-    		if(dataString.equals("hello")) {
-    			System.out.println("received hello");  
-    			
-    		   	//CHALLENGE
-    			int rand = (int)(Math.random()*100); //generates a random number to confirm    			
-    			receive = (rand+"").getBytes();
-    			String XRES = hash1(rand+"");
 
-    			sendChallenge = new DatagramPacket(receive, receive.length);
-    			sendChallenge.setAddress(helloReceive.getAddress());
-    			sendChallenge.setPort(helloReceive.getPort());
-    			System.out.println("Sending CHALLENGE");
-    			ds.send(sendChallenge);
-    			
-    			//Receiving RESPONSE
-    			helloReceive = new DatagramPacket(receive, receive.length);
-        		ds.receive(helloReceive);
-        		dataString =  new String(helloReceive.getData(), 0, helloReceive.getLength());
-        		String RES = hash1(dataString);
-        		
-        		if(RES.equals(XRES)) {
-
-    				System.out.println("AUTH_SUCCESS: Authorization process completed");
-    				receive = ("AUTH_SUCC").getBytes();
-    				sendChallenge = new DatagramPacket(receive, receive.length);
-        			sendChallenge.setAddress(helloReceive.getAddress());
-        			sendChallenge.setPort(helloReceive.getPort());
-        			
-        			ds.send(sendChallenge); //Send AUTH_SUCC to Client
-    				start(); //START TCP connection
-    				
-    			}else {
-    				System.out.println("AUTH_FAIL: Authorization process failed");
-    				break;
-    			}
-    		}
-    	}
-    }
-    //Call the start method to start the server
-    public void start() throws Exception
+    //Entry point for the UDP authentication server
+    public void start() throws IOException
     {
-    	
         listening = true;
-        try {
-            serverSocket = new ServerSocket(portNumber);
-            System.out.println("Server Started");
-          
-            //CONNECTED
-            System.out.println("CONNECTED: Received connection from client");
-            
-            //Welcoming socket that accepts connections from a client then spins off into separate thread
-            while(listening)
-            {
-                Socket socket = serverSocket.accept(); //accepts request
-                
-                //Reading from the server
-            	BufferedReader fromClient = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            	
-            	//writing to the server
-            	PrintWriter outWrite = new PrintWriter(socket.getOutputStream(), true);
-                 
-            	String inputLine = fromClient.readLine();
-            	
-            	if(fromClient.readLine()!=null) {
-            		System.out.println(inputLine);
-            	}
-                outWrite.println(inputLine);
-                outWrite.flush();
-                
-                threadPool.execute(new ClientConnection(socket, ""));
-            }
-            stop();
-        }
-        catch(IOException e)
-        {
-            System.out.println(e.toString());
-        }
-    }
-    
-    // A3: Hashing function from key
-    private String hash1(String key)
-    {
-        // super basic implementation, will probably change to account for collision
-        MD5 m = new MD5();
-        String res = m.getMD5(key);
+        ds = new DatagramSocket(portNumber);
 
-        return res;
+        //Welcoming socket that accepts connections from a client then spins off into separate thread for chat session
+        while(listening)
+        {
+            //Start listening for incoming authentication requests
+            byte[] messageBuffer = new byte[Message.PacketLength];
+
+            //UDP packet received from a client
+            DatagramPacket clientDatagram = new DatagramPacket(messageBuffer, messageBuffer.length);
+            ds.receive(clientDatagram);
+
+            //Decode the message
+            DecodedMessage message = ((DecodedMessage)MessageFactory.decode(clientDatagram));
+            //Make sure the message is a hello message
+            if(message.messageType() != MessageType.HELLO)
+            {
+                System.out.println("No client currently in authentication process");
+                //Just start the AUTH process over again
+                continue;
+            }
+
+            //*********
+            //Check if the client is on the list of subscribers
+            //String clientId = message.clientId();
+            //*********
+
+            String XRES;
+            try
+            {
+                XRES = generateAndSendChallenge(clientDatagram);
+            }
+            catch(IOException e)
+            {
+                System.out.println("Error sending packet");
+                continue;
+            }
+
+            //Reset the buffer and datagram
+            messageBuffer = new byte[Message.PacketLength];
+            clientDatagram = new DatagramPacket(messageBuffer, messageBuffer.length);
+
+            //Wait for the client to come back with a response
+            ds.receive(clientDatagram);
+            message = ((DecodedMessage) MessageFactory.decode(clientDatagram));
+            if(message.messageType() != MessageType.RESPONSE)
+            {
+                System.out.println("Another client is currently in the connection phase");
+                //Ignore the request
+            }
+
+            //Compare the server and client hashes
+            String RES = message.message();
+            if(RES.equals(XRES))
+            {
+                try
+                {
+                    sendAuthResult(clientDatagram, true);
+                }
+                catch(IOException e)
+                {
+                    System.out.println("Error sending packet");
+                    continue;
+                }
+            }
+            //Client is not authenticated
+            else
+            {
+                try
+                {
+                    sendAuthResult(clientDatagram, false);
+                }
+                catch(IOException e)
+                {
+                    System.out.println("Error sending packet");
+                    continue;
+                }
+            }
+        }
+
+        stop();
+    }
+
+    //Returns the XRES
+    private String generateAndSendChallenge(DatagramPacket datagram) throws IOException
+    {
+        //Generate the challenge
+        int rand = (int)(Math.random()*100); //generates a random number to confirm
+        //Generate the hash
+        String XRES = SecretKeyGenerator.hash1(rand+"");
+
+        //Encode the random string as a challenge message
+        EncodedMessage encodedMessage = (EncodedMessage)MessageFactory.encode(MessageType.CHALLENGE, Integer.toString(rand));
+
+        //Send the challenge back to the client
+        DatagramPacket challengeDatagram = new DatagramPacket(encodedMessage.encodedMessage(), encodedMessage.encodedMessage().length);
+        challengeDatagram.setAddress(datagram.getAddress());
+        challengeDatagram.setPort(datagram.getPort());
+        ds.send(challengeDatagram);
+        return XRES;
+    }
+
+    private void sendAuthResult(DatagramPacket datagram, boolean authSuccessful) throws IOException
+    {
+        DatagramPacket authDatagram;
+        EncodedMessage message;
+        int clientPortNumber = -1;
+
+        if(authSuccessful)
+        {
+            //NEED TO GENERATE A RANDOM COOKIE TO SEND TO THE CLIENT
+
+            //Get successful auth encoded message
+            //Client port number will be between 5000 - 5100
+            clientPortNumber = ((int)Math.random() * 100) + 5000;
+            message = (EncodedMessage)MessageFactory.encode(MessageType.AUTH_SUCCESS, Integer.toString(clientPortNumber));
+        }
+        else
+        {
+            message = (EncodedMessage)MessageFactory.encode(MessageType.AUTH_FAIL, "");
+        }
+
+        //Send the result to the client
+        authDatagram = new DatagramPacket(message.encodedMessage(), message.encodedMessage().length);
+        authDatagram.setAddress(datagram.getAddress());
+        authDatagram.setPort(datagram.getPort());
+        ds.send(authDatagram);
+
+        //Start a new TCP listener is auth successful
+        if(authSuccessful)
+        {
+            //Start a thread to wait for a connection from the client over TCP
+            threadPool.execute(new ServerToClientConnectionInstance(clientPortNumber, ""));
+        }
     }
     
     //Call the stop method to gracefully shutdown the server
@@ -139,7 +169,8 @@ public class Server
     private void  shutdownAndAwaitTermination(ExecutorService pool)
     {
         pool.shutdown(); // Disable new tasks from being submitted
-        try {
+        try
+        {
             // Wait a while for existing tasks to terminate
             if (!pool.awaitTermination(60, TimeUnit.SECONDS))
             {
@@ -147,9 +178,12 @@ public class Server
                 // Cancel currently executing tasks
                 // Wait a while for tasks to respond to being cancelled
                 if (!pool.awaitTermination(60, TimeUnit.SECONDS))
+                {
                     System.err.println("Pool did not terminate");
+                }
             }
-        } catch (InterruptedException ie)
+        }
+        catch (InterruptedException ie)
         {
             // (Re-)Cancel if current thread also interrupted
             pool.shutdownNow();

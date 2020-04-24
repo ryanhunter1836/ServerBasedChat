@@ -22,5 +22,5 @@ public interface Message
         HISTORY_RESP
     };
 
-    public int PacketLength = 2048;
+    public int PacketLength = 4196;
 }

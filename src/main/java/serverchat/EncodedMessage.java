@@ -2,6 +2,8 @@ package main.java.serverchat;
 
 import org.json.simple.*;
 
+import java.nio.charset.StandardCharsets;
+
 //Packages a message into the messaging protocol
 public class EncodedMessage implements Message
 {
@@ -10,12 +12,12 @@ public class EncodedMessage implements Message
 
     public byte[] encodedMessage() { return encodedMessage; }
 
-    public EncodedMessage(MessageType messageType, String message)
+    public EncodedMessage(MessageType messageType, String clientId, String message)
     {
         JSONObject jsonMessage = new JSONObject();
         jsonMessage.put("MessageType", messageType.ordinal());
+        jsonMessage.put("ClientID", clientId);
         jsonMessage.put("Message", message);
-        String payload = jsonMessage.toJSONString() + "\n";
-        encodedMessage = payload.getBytes();
+        encodedMessage = jsonMessage.toJSONString().getBytes();
     }
 }

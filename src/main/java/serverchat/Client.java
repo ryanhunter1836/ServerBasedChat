@@ -4,73 +4,163 @@ import java.net.*;
 import java.io.*;
 import java.util.*;
 
-public class Client {
+public class Client implements Message
+{
+	//Port number of authentication server
 	 int portNumber;
+	 int sessionPortNumber;
 	 
-	public Client(int port) {
+	public Client(int port)
+	{
 		portNumber = port;
-		
+		sessionPortNumber = -1;
 	}
 	
-	public void startClient() throws Exception{
-		//Initiate a client socket that ClientConnection can attempt
-		Scanner input = new Scanner(System.in);
-		
-		System.out.print("What is your user name/Client ID? ");
-        String userID = input.nextLine(); 
-        
-        System.out.println("Your userID is: "+userID);
-        DatagramSocket clientUDP = new DatagramSocket();
-       
-        InetAddress clientIP = InetAddress.getLocalHost();
-        byte buffer[] = null;
-      
-    	String inputLine;
-    	
-        while(true) {
-        	inputLine = input.nextLine();
-        	if(inputLine.contains("hello")) {	
-        	//HELLO
-        		buffer = inputLine.getBytes();
-        		DatagramPacket clientHello = new DatagramPacket(buffer, buffer.length, clientIP, portNumber);
-        		clientUDP.send(clientHello);
-        		
-        		//receives CHALLENGE
-        		byte buffer2[] = new byte[1000];
-        		DatagramPacket clientReceive = null;
-        		clientReceive = new DatagramPacket(buffer2, buffer2.length);
-        		clientUDP.receive(clientReceive);
-           		String dataString =  new String(clientReceive.getData(), 0, clientReceive.getLength()) ;	
-        		System.out.println("Challenge number: "+ dataString);
-        		
-        		//RESPONSE
-        		buffer = input.nextLine().getBytes();
-        		DatagramPacket clientResponse = new DatagramPacket(buffer, buffer.length, clientIP, portNumber);
-        		clientUDP.send(clientResponse);
-        		
-        		buffer = new byte[1000];
-        		clientReceive = new DatagramPacket(buffer2, buffer2.length);
-        		clientUDP.receive(clientReceive);
-           		dataString =  new String(clientReceive.getData(), 0, clientReceive.getLength()) ;	
-        		
-        		if(dataString.contentEquals("AUTH_SUCC")) {
-        			System.out.println("SUCCESS");
-        			clientAccepted();
-        		}
-        	}
-        }
-	}
-	
-        public void clientAccepted () throws Exception {
-		
-		Socket clientSocket = new Socket("localhost", portNumber); //host and port number subject to change
-
+	public void startClient() throws IOException
+	{
 		/*
-		//New object ClientConnection that takes clientSocket
-		ClientConnection client1 = new ClientConnection(clientSocket);
-		client1.run(); //runs input and output
-		clientSocket.close(); //terminate the connection
-		*/
+		//NOTE: CLIENT ID IS NOT OPTIONAL, IT IS PRESET
+		System.out.print("What is your user name/Client ID? ");
+        String userID = input.nextLine();
+        System.out.println("Your userID is: "+userID);
+
+		 */
+
+		String userID = "test";
+    	boolean authenticated;
+    	//Need to delay the client thread for a second to give the server time to boot up
+    	try
+		{
+			Thread.sleep(1000);
+		}
+    	catch(InterruptedException e) {}
+
+    	authenticated = authenticate(userID);
+    	if(authenticated)
+		{
+			//Connect to the TPC socket for the chat session
+			startChatSession();
+		}
+	}
+
+	private boolean authenticate(String clientId) throws IOException
+	{
+		DatagramSocket ds = new DatagramSocket();
+		InetAddress serverIp = InetAddress.getLocalHost();
+		byte buffer[] = new byte[Message.PacketLength];
+
+		//Create an authentication request
+		EncodedMessage encodedMessage = (EncodedMessage)MessageFactory.encode(MessageType.HELLO, clientId, "_");
+
+		//And send to the server
+		DatagramPacket serverDatagram = new DatagramPacket(encodedMessage.encodedMessage(), encodedMessage.encodedMessage().length, serverIp, portNumber);
+		ds.send(serverDatagram);
+
+		//Set up the datagram to receive data
+		serverDatagram = new DatagramPacket(buffer, buffer.length);
+		ds.receive(serverDatagram);
+
+		DecodedMessage decodedMessage = ((DecodedMessage) MessageFactory.decode(serverDatagram));
+		//Check to make sure it is a challenge message
+		if(decodedMessage.messageType() != MessageType.CHALLENGE)
+		{
+			//This is a pretty serious problem because the server is now in a weird state.
+			//Need to implement some sort of auth timeout on the server
+			return false;
+		}
+
+		int randNum = Integer.parseInt(decodedMessage.message());
+		//Run the hashing algorithm to get a response
+		String RES = SecretKeyGenerator.hash1(randNum+"");
+
+		encodedMessage = (EncodedMessage)MessageFactory.encode(MessageType.RESPONSE, clientId, RES);
+
+		//Send the challenge back to the client
+		DatagramPacket respDatagram = new DatagramPacket(encodedMessage.encodedMessage(), encodedMessage.encodedMessage().length, serverIp, portNumber);
+		ds.send(respDatagram);
+
+		//Reset the buffer and datagram
+		buffer = new byte[Message.PacketLength];
+		serverDatagram = new DatagramPacket(buffer, buffer.length);
+		ds.receive(serverDatagram);
+
+		decodedMessage = (DecodedMessage)MessageFactory.decode(serverDatagram);
+		if(decodedMessage.messageType() == MessageType.AUTH_SUCCESS)
+		{
+			System.out.println("Authentication success");
+			sessionPortNumber = Integer.parseInt(decodedMessage.message());
+			return true;
+		}
+		else
+		{
+			System.out.println("Authentication failure");
+			return false;
+		}
+	}
+
+	private void startChatSession ()
+	{
+		Socket clientSocket = null;
+		PrintWriter output = null;
+		BufferedReader input = null;
+		Scanner scanner = null;
+
+		//Connect to the server on the designated port
+		try
+		{
+			clientSocket = new Socket("localhost", sessionPortNumber);
+
+			//Read input from the console
+			scanner = new Scanner(System.in);
+
+			//Input and output streams for the socket
+			output = new PrintWriter(clientSocket.getOutputStream(), true);
+			input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+		}
+		catch(UnknownHostException u)
+		{
+			System.out.println(u);
+		}
+		catch(IOException i)
+		{
+			System.out.println(i);
+		}
+
+		// string to read message from input
+		String line = "";
+		// keep reading until "Over" is input
+		while (!line.equals("Log off"))
+		{
+			try
+			{
+				line = scanner.nextLine();
+				output.println(line);
+				//Receive an echo from the server
+				String response = "";
+				if((response = input.readLine()) == null)
+				{
+					//Socket is closed
+					break;
+				}
+				System.out.println(response);
+			}
+			catch(IOException i)
+			{
+				System.out.println(i);
+			}
+		}
+
+		// close the connection
+		try
+		{
+			input.close();
+			output.close();
+			clientSocket.close();
+		}
+		catch(IOException i)
+		{
+			System.out.println(i);
+		}
 	}
 }
 

@@ -1,5 +1,7 @@
 package main.java.serverchat;
 
+import java.io.IOException;
+
 public class Main
 {
     public static void main(String[] args)
@@ -14,11 +16,10 @@ public class Main
             {
                 server.start();
             }
-            catch(Exception e)
+            catch(IOException e)
             {
-
+                System.out.println(e.toString());
             }
-
         }
 
         //Run as a client
@@ -31,9 +32,9 @@ public class Main
             {
                 client.startClient();
             }
-            catch(Exception e)
+            catch(IOException e)
             {
-
+                System.out.println("Error during authentication process");
             }
         }
     }
