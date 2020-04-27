@@ -1,6 +1,7 @@
 package main.java.serverchat;
 
 import java.net.*;
+import java.util.Random;
 import java.util.concurrent.*;
 import java.io.*;
 
@@ -9,6 +10,7 @@ public class Server implements Message
     int portNumber;
     private boolean listening = false;
     private DatagramSocket ds;
+    Random random;
 
     private final ExecutorService threadPool;
 
@@ -17,6 +19,7 @@ public class Server implements Message
         portNumber = port;
         //Create the thread pool
         threadPool = Executors.newFixedThreadPool(10);
+        random = new Random();
     }
 
     //Entry point for the UDP authentication server
@@ -137,7 +140,7 @@ public class Server implements Message
 
             //Get successful auth encoded message
             //Client port number will be between 5000 - 5100
-            clientPortNumber = ((int)Math.random() * 100) + 5000;
+            clientPortNumber = random.nextInt(1000) + 5000;
             message = (EncodedMessage)MessageFactory.encode(MessageType.AUTH_SUCCESS, Integer.toString(clientPortNumber));
         }
         else
