@@ -38,21 +38,13 @@ public class ServerToClientConnectionInstance implements Runnable, Message
             //Read until the client disconnects
             while ((inputLine = in.readLine()) != null)
             {
-                if(inputLine.contains("Log off") || inputLine.contains("log off"))
+                if(inputLine.contains("Log off"))
                 {
                     break;
                 }
 
                 //Echo the data back to the client
-                out.println(inputLine);
-                
-                if(inputLine.contains("chat"))
-                {
-                	String recipient = inputLine;
-                	out.println(recipient);
-                   //chat(in, out, recipient);
-                }
-                
+                out.println(inputLine);   
             }
             in.close();
             out.close();
