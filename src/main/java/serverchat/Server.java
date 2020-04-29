@@ -3,6 +3,9 @@ package main.java.serverchat;
 import java.net.*;
 import java.util.Random;
 import java.util.concurrent.*;
+
+import main.java.serverchat.database.Database;
+
 import java.io.*;
 
 public class Server implements Message
@@ -77,8 +80,16 @@ public class Server implements Message
                 //Ignore the request
             }
 
-            //Compare the server and client hashes
-            String RES = message.message();
+            /*************
+             * //Compare the server and client hashes
+             * String RES = SecretKeyGenerator.hash1(rand + message.message());
+             * 
+             * // Either needs to be the line above (if client just puts in key) or line below if
+             * the client has to run the algorithm themselves
+             * String RES = message.message();
+            *************/
+            
+            // Compare the client response to server response
             if(RES.equals(XRES))
             {
                 try
@@ -115,7 +126,7 @@ public class Server implements Message
         //Generate the challenge
         int rand = (int)(Math.random()*100); //generates a random number to confirm
         //Generate the hash
-        String XRES = SecretKeyGenerator.hash1(rand+"");
+        String XRES = SecretKeyGenerator.hash1(rand+""); // need to get clientID and privateKey from database
 
         //Encode the random string as a challenge message
         EncodedMessage encodedMessage = (EncodedMessage)MessageFactory.encode(MessageType.CHALLENGE, Integer.toString(rand));

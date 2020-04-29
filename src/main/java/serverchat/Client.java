@@ -26,7 +26,7 @@ public class Client implements Message
 
 		 */
 
-		String userID = "test";
+		String userID = "test"; // need to figure out a way to get access to database from server
     	boolean authenticated;
     	//Need to delay the client thread for a second to give the server time to boot up
     	try
@@ -50,7 +50,7 @@ public class Client implements Message
 		byte buffer[] = new byte[Message.PacketLength];
 
 		//Create an authentication request
-		EncodedMessage encodedMessage = (EncodedMessage)MessageFactory.encode(MessageType.HELLO, clientId, "_");
+		EncodedMessage encodedMessage = (EncodedMessage)MessageFactory.encode(MessageType.HELLO, clientId, "_"); // get clientid from database
 
 		//And send to the server
 		DatagramPacket serverDatagram = new DatagramPacket(encodedMessage.encodedMessage(), encodedMessage.encodedMessage().length, serverIp, portNumber);
@@ -70,8 +70,11 @@ public class Client implements Message
 		}
 
 		int randNum = Integer.parseInt(decodedMessage.message());
+		
+		// Get XRES using random num and private key 
+		// String XRES = SecretKeyGenerator.hash1(randNum+""); // private key from database given clientID
 		//Run the hashing algorithm to get a response
-		String RES = SecretKeyGenerator.hash1(randNum+"");
+		String RES = SecretKeyGenerator.hash1(randNum+""); // get user input to verify
 
 		encodedMessage = (EncodedMessage)MessageFactory.encode(MessageType.RESPONSE, clientId, RES);
 
