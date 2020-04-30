@@ -9,7 +9,7 @@ public class Client implements Message
 	//Port number of authentication server
 	 int portNumber;
 	 int sessionPortNumber;
-	 
+
 	public Client(int port)
 	{
 		portNumber = port;

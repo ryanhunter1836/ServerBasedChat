@@ -1,6 +1,8 @@
 package main.java.serverchat;
 
 import java.net.*;
+import java.util.Dictionary;
+import java.util.Hashtable;
 import java.util.Random;
 import java.util.concurrent.*;
 import java.io.*;
@@ -10,7 +12,8 @@ public class Server implements Message
     int portNumber;
     private boolean listening = false;
     private DatagramSocket ds;
-    Random random;
+    private Random random;
+    private static Dictionary connectedClients;
 
     private final ExecutorService threadPool;
 
@@ -20,6 +23,7 @@ public class Server implements Message
         //Create the thread pool
         threadPool = Executors.newFixedThreadPool(10);
         random = new Random();
+        connectedClients = new Hashtable();
     }
 
     //Entry point for the UDP authentication server
@@ -139,7 +143,7 @@ public class Server implements Message
             //NEED TO GENERATE A RANDOM COOKIE TO SEND TO THE CLIENT
 
             //Get successful auth encoded message
-            //Client port number will be between 5000 - 5100
+            //Client port number will be between 5000 - 6000
             clientPortNumber = random.nextInt(1000) + 5000;
             message = (EncodedMessage)MessageFactory.encode(MessageType.AUTH_SUCCESS, Integer.toString(clientPortNumber));
         }
@@ -158,8 +162,25 @@ public class Server implements Message
         if(authSuccessful)
         {
             //Start a thread to wait for a connection from the client over TCP
-            threadPool.execute(new ServerToClientConnectionInstance(clientPortNumber, ""));
+            Runnable task = new ServerToClientConnectionInstance(clientPortNumber, "");
+
+            //Add the task to the list of connected clients for easy access later
+            //connectedClients.put(clientId, task);
+
+            threadPool.execute(task);
         }
+    }
+
+    //Returns the routing information for the request client
+    public Runnable getClientTask(String clientId)
+    {
+        return (Runnable)connectedClients.get(clientId);
+    }
+
+    //Method called when a connection terminates
+    public static void disconnect(String clientId)
+    {
+        connectedClients.remove(clientId);
     }
     
     //Call the stop method to gracefully shutdown the server

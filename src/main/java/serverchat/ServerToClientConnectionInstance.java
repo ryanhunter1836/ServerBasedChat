@@ -7,18 +7,22 @@ import java.net.*;
 public class ServerToClientConnectionInstance implements Runnable, Message
 {
     private int portNumber;
-    public String userName;
+    private String userName;
+    private boolean clientConnected;
+    PrintWriter out = null;
 
     //Object to hold a connection between the server and the client
     public ServerToClientConnectionInstance(int portNumber, String clientID)
     {
         this.portNumber = portNumber;
         this.userName = clientID;
+        clientConnected = false;
     }
 
     public String getUserName() {
     	return this.userName;
     }
+    public boolean connected() { return clientConnected; }
 
     @Override
     //Required for the runnable interface
@@ -29,11 +33,14 @@ public class ServerToClientConnectionInstance implements Runnable, Message
         {
             ServerSocket serverSocket = new ServerSocket(portNumber);
             Socket socket = serverSocket.accept();
+            clientConnected = true;
 
             //Setup the input and output streams for the socket
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            out = new PrintWriter(socket.getOutputStream(), true);
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
+            //This is just a test method that echoes input back to the client.
+            // ADD CHAT SESSION LOGIC HERE
             String inputLine = "";
             //Read until the client disconnects
             while ((inputLine = in.readLine()) != null)
@@ -49,10 +56,21 @@ public class ServerToClientConnectionInstance implements Runnable, Message
             in.close();
             out.close();
             socket.close();
+            Server.disconnect(userName);
         }
         catch (IOException e)
         {
             System.out.println(e);
+        }
+    }
+
+    //Method to send a message to this specific client
+    public void sendMessage(EncodedMessage message)
+    {
+        //Guard against sending a message to a disconnected client
+        if(clientConnected && out != null)
+        {
+            out.println(message.encodedMessage());
         }
     }
 
