@@ -267,10 +267,8 @@ public class Database {
 
             boolean clientAConnectable = makeClientConnectable(clientAID);
             boolean clientBConnectable = makeClientConnectable(clientBID);
-            boolean clientAClearEncryptionKey = setClientEncryptionKey(clientAID, "");
-            boolean clientBClearEncryptionKey = setClientEncryptionKey(clientBID, "");
 
-            return clientAConnectable && clientBConnectable && clientAClearEncryptionKey && clientBClearEncryptionKey;
+            return clientAConnectable && clientBConnectable;
         }
         return false;
     }
