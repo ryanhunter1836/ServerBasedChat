@@ -1,5 +1,7 @@
 package main.java.serverchat;
 
+import main.java.serverchat.database.Database;
+
 import java.net.*;
 import java.util.Dictionary;
 import java.util.Hashtable;
@@ -17,6 +19,7 @@ public class Server implements Message
     private DatagramSocket ds;
     private Random random;
     private static Dictionary connectedClients;
+    private Database database;
 
     private final ExecutorService threadPool;
 
@@ -25,6 +28,7 @@ public class Server implements Message
         portNumber = port;
         //Create the thread pool
         threadPool = Executors.newFixedThreadPool(10);
+        database = new Database();
         random = new Random();
         connectedClients = new Hashtable();
     }
@@ -55,19 +59,22 @@ public class Server implements Message
                 continue;
             }
 
-            //*********
-            //Check if the client is on the list of subscribers
-            //String clientId = message.clientId();
-            //*********
-
             String XRES;
             try
             {
-                XRES = generateAndSendChallenge(clientDatagram);
+                XRES = generateAndSendChallenge(clientDatagram, message);
             }
             catch(IOException e)
             {
                 System.out.println("Error sending packet");
+                sendAuthResult(clientDatagram, false);
+                continue;
+            }
+
+            // If XRES could not be generated because client doesn't exist, return AUTH_FAIL and continue
+            if (XRES.equals(""))
+            {
+                sendAuthResult(clientDatagram, false);
                 continue;
             }
 
@@ -82,6 +89,9 @@ public class Server implements Message
             {
                 System.out.println("Another client is currently in the connection phase");
                 //Ignore the request
+                // Why is a request being ignored? At least send something back so the client knows to not wait anymore.
+                // AUTH_FAIL is not ideal in this situation, but at least it's something.
+                sendAuthResult(clientDatagram, false);
             }
 
             /*************
@@ -124,13 +134,31 @@ public class Server implements Message
         stop();
     }
 
-    //Returns the XRES
-    private String generateAndSendChallenge(DatagramPacket datagram) throws IOException
+    /**
+     * Generates the challenge that is used in 2.2
+     * @param datagram The datagram received from the client
+     * @param message The decoded message from the datagram
+     * @return A string with the expected result (XRES)
+     * @throws IOException
+     */
+    private String generateAndSendChallenge(DatagramPacket datagram, DecodedMessage message) throws IOException
     {
         //Generate the challenge
         int rand = (int)(Math.random()*100); //generates a random number to confirm
+
+        // Obtain the client's private key from the database
+        String clientPrivateKey;
+        try
+        {
+            clientPrivateKey = database.getClient(message.clientId()).getString("privateKey");
+        } catch (Exception e)
+        {
+            System.out.println("Unable to obtain private key for client: " + message.clientId());
+            return "";
+        }
+
         //Generate the hash
-        String XRES = SecretKeyGenerator.hash1(rand+""); // need to get clientID and privateKey from database
+        String XRES = SecretKeyGenerator.hash1(rand+clientPrivateKey);
 
         //Encode the random string as a challenge message
         EncodedMessage encodedMessage = (EncodedMessage)MessageFactory.encode(MessageType.CHALLENGE, Integer.toString(rand));

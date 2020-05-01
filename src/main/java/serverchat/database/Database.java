@@ -91,6 +91,7 @@ public class Database {
         MongoCollection<Document> clientCollection = getClientCollection();
         Document client = new Document("_id", clientID)
                 .append("privateKey", privateKey)
+                .append("encryptionKey", "")
                 .append("connectable", false)
                 .append("currentSessionID", "");
 
@@ -108,7 +109,8 @@ public class Database {
      * Obtains a client if it exists. Otherwise returns null.
      * @param clientID The id of the client, in the format of Client-ID-clientID
      * @return A document of the client with the following fields:
-     * - secretKey (String)
+     * - privateKey (String)
+     * - encryptionKey (String)
      * - connectable (boolean)
      * - currentSessionID (String)
      */
@@ -116,6 +118,28 @@ public class Database {
         MongoCollection<Document> clientCollection = getClientCollection();
         Document client = clientCollection.find(eq("_id", clientID)).first();
         return client;
+    }
+
+    /**
+     * Sets the encryption key of the client.
+     * @param clientID
+     * @param encryptionKey
+     * @return
+     */
+    public boolean setClientEncryptionKey(String clientID, String encryptionKey) {
+        MongoCollection<Document> clientCollection = getClientCollection();
+        Document updateDocument = new Document("encryptionKey", encryptionKey);
+
+        try {
+            clientCollection.findOneAndUpdate(eq("_id", clientID),
+                    new Document("$set", updateDocument));
+        }
+        catch (Exception e) {
+            System.out.println(e);
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -142,15 +166,15 @@ public class Database {
 
     /**
      * Sets the provided client id to a connectable state, such as when the client first connects / ends a chat.
-     * @param ClientID The ID of the client
+     * @param clientID The ID of the client
      * @return true if the operation succeeds
      */
-    public boolean makeClientConnectable(String ClientID) {
+    public boolean makeClientConnectable(String clientID) {
         MongoCollection<Document> clientCollection = getClientCollection();
         Document updateDocument = new Document("connectable", true).append("currentSessionID", "");
 
         try {
-            clientCollection.findOneAndUpdate(eq("_id", ClientID),
+            clientCollection.findOneAndUpdate(eq("_id", clientID),
                     new Document("$set", updateDocument));
         }
         catch (Exception e) {
@@ -168,7 +192,9 @@ public class Database {
      */
     public boolean makeClientUnconnectable(String ClientID) {
         MongoCollection<Document> clientCollection = getClientCollection();
-        Document updateDocument = new Document("connectable", false).append("currentSessionID", "");
+        Document updateDocument = new Document("connectable", false)
+                .append("currentSessionID", "")
+                .append("encryptionKey", "");
 
         try {
             clientCollection.findOneAndUpdate(eq("_id", ClientID),
@@ -241,8 +267,10 @@ public class Database {
 
             boolean clientAConnectable = makeClientConnectable(clientAID);
             boolean clientBConnectable = makeClientConnectable(clientBID);
+            boolean clientAClearEncryptionKey = setClientEncryptionKey(clientAID, "");
+            boolean clientBClearEncryptionKey = setClientEncryptionKey(clientBID, "");
 
-            return clientAConnectable && clientBConnectable;
+            return clientAConnectable && clientBConnectable && clientAClearEncryptionKey && clientBClearEncryptionKey;
         }
         return false;
     }
