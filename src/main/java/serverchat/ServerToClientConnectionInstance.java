@@ -105,6 +105,10 @@ public class ServerToClientConnectionInstance implements Runnable, Message
         }
     }
 
+    /**
+     * Starts a chat session between this client and the other client if the other client is available
+     * @param clientID The ID of the other client
+     */
     public void startChatSession(String clientID)
     {
         if (database.getClient(clientID).getBoolean("connectable"))
