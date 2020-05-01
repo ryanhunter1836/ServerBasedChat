@@ -9,13 +9,15 @@ public class ServerToClientConnectionInstance implements Runnable, Message
     private int portNumber;
     private String userName;
     private boolean clientConnected;
+    private String privateKey;
     PrintWriter out = null;
 
     //Object to hold a connection between the server and the client
-    public ServerToClientConnectionInstance(int portNumber, String clientID)
+    public ServerToClientConnectionInstance(int portNumber, String clientID, String key)
     {
         this.portNumber = portNumber;
         this.userName = clientID;
+        this.privateKey = key;
         clientConnected = false;
     }
 

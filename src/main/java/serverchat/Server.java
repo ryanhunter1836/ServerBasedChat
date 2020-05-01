@@ -3,6 +3,7 @@ package main.java.serverchat;
 import main.java.serverchat.database.Database;
 
 import java.net.*;
+import java.security.NoSuchAlgorithmException;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.Random;
@@ -151,10 +152,6 @@ public class Server implements Message
 
         //Generate the hash
         String XRES = SecretKeyGenerator.hash1(rand+clientPrivateKey);
-        
-        //Generate Encryption Key and assign to client
-        String CK = SecretKeyGenerator.hash2(rand+clientPrivateKey);
-        database.setClientEncryptionKey(message.clientId(), CK);
 
         //Encode the random string as a challenge message
         EncodedMessage encodedMessage = (EncodedMessage)MessageFactory.encode(MessageType.CHALLENGE, Integer.toString(rand));
@@ -167,16 +164,13 @@ public class Server implements Message
         return XRES;
     }
 
-    private void sendAuthResult(DatagramPacket datagram, boolean authSuccessful) throws IOException
-    {
+    private void sendAuthResult(DatagramPacket datagram, boolean authSuccessful) throws IOException {
         DatagramPacket authDatagram;
         EncodedMessage message;
         int clientPortNumber = -1;
 
         if(authSuccessful)
         {
-            //NEED TO GENERATE A RANDOM COOKIE TO SEND TO THE CLIENT
-
             //Get successful auth encoded message
             //Client port number will be between 5000 - 6000
             clientPortNumber = random.nextInt(1000) + 5000;
@@ -196,8 +190,17 @@ public class Server implements Message
         //Start a new TCP listener is auth successful
         if(authSuccessful)
         {
+            // Generate a random cookie and respective encryption key
+            // The cookie will be between 10,000 - 20,000
+            int cookie = (int)(Math.random()*10000) + 10000;
+
+            DecodedMessage clientMessage = (DecodedMessage)MessageFactory.decode(datagram);
+            String clientPrivateKey = database.getClient(clientMessage.clientId()).getString("privateKey");
+            String cookieHash = SecretKeyGenerator.hash2(cookie+clientPrivateKey);
+            database.setClientEncryptionKey(clientMessage.clientId(), cookieHash);
+
             //Start a thread to wait for a connection from the client over TCP
-            Runnable task = new ServerToClientConnectionInstance(clientPortNumber, "");
+            Runnable task = new ServerToClientConnectionInstance(clientPortNumber, clientMessage.clientId(), cookieHash);
 
             //Add the task to the list of connected clients for easy access later
             //connectedClients.put(clientId, task);
