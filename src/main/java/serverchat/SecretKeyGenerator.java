@@ -43,11 +43,17 @@ public class SecretKeyGenerator {
 	}
 	
 	// A8: Hashing function from key
-	public static String hash2(String encryptionKey) throws NoSuchAlgorithmException
+	public static String hash2(String encryptionKey)
 	{
-		byte[] hash = SHA256.getSHA(encryptionKey); 
-		String res = SHA256.hexToString(hash);
-		
+		String res;
+		try {
+			byte[] hash = SHA256.getSHA(encryptionKey);
+			res = SHA256.hexToString(hash);
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			return null;
+		}
+
 		return res;
 	}
 }

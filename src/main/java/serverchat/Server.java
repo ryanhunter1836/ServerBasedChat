@@ -3,8 +3,7 @@ package main.java.serverchat;
 import main.java.serverchat.database.Database;
 
 import java.net.*;
-import java.security.NoSuchAlgorithmException;
-import java.util.Dictionary;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Random;
 import java.util.concurrent.*;
@@ -17,7 +16,7 @@ public class Server implements Message
     private boolean listening = false;
     private DatagramSocket ds;
     private Random random;
-    private static Dictionary connectedClients;
+    private static Hashtable<String, ServerToClientConnectionInstance> connectedClients;
     private Database database;
 
     private final ExecutorService threadPool;
@@ -29,7 +28,7 @@ public class Server implements Message
         threadPool = Executors.newFixedThreadPool(10);
         database = new Database();
         random = new Random();
-        connectedClients = new Hashtable();
+        connectedClients = new Hashtable<>();
     }
 
     //Entry point for the UDP authentication server
@@ -169,12 +168,37 @@ public class Server implements Message
         EncodedMessage message;
         int clientPortNumber = -1;
 
+        // Craft a return message and start the TCP listener
         if(authSuccessful)
         {
             //Get successful auth encoded message
             //Client port number will be between 5000 - 6000
             clientPortNumber = random.nextInt(1000) + 5000;
-            message = (EncodedMessage)MessageFactory.encode(MessageType.AUTH_SUCCESS, Integer.toString(clientPortNumber));
+
+            // Generate a random cookie and respective encryption key
+            // The cookie will be between 10,000 - 20,000
+            int cookie = (int)(Math.random()*10000) + 10000;
+
+            DecodedMessage clientMessage = (DecodedMessage)MessageFactory.decode(datagram);
+            String clientPrivateKey = database.getClient(clientMessage.clientId()).getString("privateKey");
+            String cookieHash = SecretKeyGenerator.hash2(cookie+clientPrivateKey);
+            database.setClientEncryptionKey(clientMessage.clientId(), cookieHash);
+
+            //Start a thread to wait for a connection from the client over TCP
+            ServerToClientConnectionInstance task = new ServerToClientConnectionInstance(
+                    this, clientPortNumber, clientMessage.clientId(), cookieHash);
+
+            //Add the task to the list of connected clients for easy access later
+            connectedClients.put(clientMessage.clientId(), task);
+
+            threadPool.execute(task);
+
+            // Craft message
+            HashMap<String, String> messageMap = new HashMap<>();
+            messageMap.put("MessageType", Integer.toString(MessageType.AUTH_SUCCESS.ordinal()));
+            messageMap.put("RandCookie", Integer.toString(cookie));
+            messageMap.put("PortNumber", Integer.toString(clientPortNumber));
+            message = MessageFactory.encode(messageMap);
         }
         else
         {
@@ -186,37 +210,26 @@ public class Server implements Message
         authDatagram.setAddress(datagram.getAddress());
         authDatagram.setPort(datagram.getPort());
         ds.send(authDatagram);
-
-        //Start a new TCP listener is auth successful
-        if(authSuccessful)
-        {
-            // Generate a random cookie and respective encryption key
-            // The cookie will be between 10,000 - 20,000
-            int cookie = (int)(Math.random()*10000) + 10000;
-
-            DecodedMessage clientMessage = (DecodedMessage)MessageFactory.decode(datagram);
-            String clientPrivateKey = database.getClient(clientMessage.clientId()).getString("privateKey");
-            String cookieHash = SecretKeyGenerator.hash2(cookie+clientPrivateKey);
-            database.setClientEncryptionKey(clientMessage.clientId(), cookieHash);
-
-            //Start a thread to wait for a connection from the client over TCP
-            Runnable task = new ServerToClientConnectionInstance(clientPortNumber, clientMessage.clientId(), cookieHash);
-
-            //Add the task to the list of connected clients for easy access later
-            //connectedClients.put(clientId, task);
-
-            threadPool.execute(task);
-        }
     }
 
     //Returns the routing information for the request client
-    public Runnable getClientTask(String clientId)
+    private ServerToClientConnectionInstance getClientTask(String clientId)
     {
-        return (Runnable)connectedClients.get(clientId);
+        return connectedClients.get(clientId);
+    }
+
+    /**
+     * Sends a message to a specific client
+     * @param message The message to send
+     * @param clientID The ID of the client to send to
+     */
+    public void sendMessageToClient(EncodedMessage message, String clientID) {
+        ServerToClientConnectionInstance client = getClientTask(clientID);
+        client.receiveMessage(message);
     }
 
     //Method called when a connection terminates
-    public static void disconnect(String clientId)
+    public void disconnect(String clientId)
     {
         connectedClients.remove(clientId);
     }
@@ -228,7 +241,7 @@ public class Server implements Message
     }
 
     //Dispose of the thread pool and close any lingering connections.  Copied from documentation
-    private void  shutdownAndAwaitTermination(ExecutorService pool)
+    private void shutdownAndAwaitTermination(ExecutorService pool)
     {
         pool.shutdown(); // Disable new tasks from being submitted
         try

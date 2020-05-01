@@ -208,6 +208,17 @@ public class Database {
         return true;
     }
 
+    public Document getSession(String clientAID, String clientBID)
+    {
+        MongoCollection<Document> sessionCollection = getSessionCollection();
+        return sessionCollection.find(
+                or(
+                        and(eq("clientA", clientAID), eq("clientB", clientBID)),
+                        and(eq("clientA", clientBID), eq("clientB", clientAID))
+                )
+        ).first();
+    }
+
     /**
      * Marks clients as connected if both clients exist. On failure, returns null.
      * The order of the clients does not matter.
@@ -221,15 +232,9 @@ public class Database {
         Document clientB = clientCollection.find(eq("_id", clientBID)).first();
 
         if (clientA != null && clientB != null &&
-                clientA.getBoolean("connectable") && clientB.getBoolean("connectable")) {
+            clientA.getBoolean("connectable") && clientB.getBoolean("connectable")) {
 
-            MongoCollection<Document> sessionCollection = getSessionCollection();
-            Document session = sessionCollection.find(
-                    or(
-                        and(eq("clientA", clientAID), eq("clientB", clientBID)),
-                        and(eq("clientA", clientBID), eq("clientB", clientAID))
-                    )
-            ).first();
+            Document session = getSession(clientAID, clientBID);
 
             String sessionID;
             if (session == null) {
