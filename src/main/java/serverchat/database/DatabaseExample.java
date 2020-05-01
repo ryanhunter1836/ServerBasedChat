@@ -35,6 +35,11 @@ class DatabaseExample {
         clientA = db.getClient("Client-ID-D");
         System.out.println(clientA);
 
+        System.out.println("\nSet encryption key for Client A.");
+        db.setClientEncryptionKey("Client-ID-A", "someencryptionkey");
+        clientA = db.getClient("Client-ID-A");
+        System.out.println(clientA);
+
         System.out.println("\nMake Client B connectable.");
         System.out.println(db.makeClientConnectable("Client-ID-B"));
         clientB = db.getClient("Client-ID-B");
@@ -111,7 +116,15 @@ class DatabaseExample {
             System.out.println(chatItem);
         }
 
+        System.out.println("\nDisconnect all clients - such as if they were to log out.");
+        System.out.println(db.makeClientUnconnectable("Client-ID-A"));
+        System.out.println(db.makeClientUnconnectable("Client-ID-B"));
+        System.out.println(db.makeClientUnconnectable("Client-ID-C"));
+        System.out.println(db.getClient("Client-ID-A"));
+        System.out.println(db.getClient("Client-ID-B"));
+        System.out.println(db.getClient("Client-ID-C"));
+
         System.out.println("\nDelete the database.");
-//        db.dropDatabase();
+        db.dropDatabase();
     }
 }

@@ -25,3 +25,23 @@ sourceSets {
         }
     }
 }
+
+task buildJar(type: Jar) {
+    archiveBaseName = 'server_client'
+    manifest {
+        attributes 'Implementation-Title': 'Server and Client Jar',
+                'Main-Class': 'main.java.serverchat.Main'
+    }
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
+
+task buildJarDatabaseInit(type: Jar) {
+    archiveBaseName = 'database_init'
+    manifest {
+        attributes 'Implementation-Title': 'Server and Client Jar',
+                'Main-Class': 'main.java.serverchat.database.DatabaseInitializeClients'
+    }
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
