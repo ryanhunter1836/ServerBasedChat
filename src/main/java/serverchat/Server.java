@@ -8,8 +8,6 @@ import java.util.Hashtable;
 import java.util.Random;
 import java.util.concurrent.*;
 
-import main.java.serverchat.database.Database;
-
 import java.io.*;
 
 public class Server implements Message
@@ -94,14 +92,8 @@ public class Server implements Message
                 sendAuthResult(clientDatagram, false);
             }
 
-            /*************
-             * //Compare the server and client hashes
-             * String RES = SecretKeyGenerator.hash1(rand + message.message());
-             * 
-             * // Either needs to be the line above (if client just puts in key) or line below if
-             * the client has to run the algorithm themselves
-             * String RES = message.message();
-            *************/
+            // Either needs to be the line above (if client just puts in key) or line below ifthe client has to run the algorithm themselves
+            String RES = message.message();
             
             // Compare the client response to server response
             if(RES.equals(XRES))
@@ -159,6 +151,10 @@ public class Server implements Message
 
         //Generate the hash
         String XRES = SecretKeyGenerator.hash1(rand+clientPrivateKey);
+        
+        //Generate Encryption Key and assign to client
+        String CK = SecretKeyGenerator.hash2(rand+clientPrivateKey);
+        database.setClientEncryptionKey(message.clientId(), CK);
 
         //Encode the random string as a challenge message
         EncodedMessage encodedMessage = (EncodedMessage)MessageFactory.encode(MessageType.CHALLENGE, Integer.toString(rand));

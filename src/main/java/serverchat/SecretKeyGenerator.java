@@ -37,10 +37,19 @@ public class SecretKeyGenerator {
 	// A3: Hashing function from key
 	public static String hash1(String key)
 	{
-		// super basic implementation, will probably change to account for collision
 		MD5 m = new MD5();
 		String res = m.getMD5(key);
 
+		return res;
+	}
+	
+	// A8: Hashing function from key
+	public static String hash2(String encryptionKey) throws NoSuchAlgorithmException
+	{
+		SHA256 s = new SHA256();
+		byte[] hash = s.getSHA(encryptionKey); 
+		String res = s.hexToString(hash);
+		
 		return res;
 	}
 }
