@@ -35,5 +35,8 @@ To get this running on mininet:
 ## TO RUN:  
 To run in server mode:  
 pass in arguments `server [port number]` when running `Main.java`  
+`java Main.java server <port number>`  
+  
 To run in client mode:  
 pass in arguments `client [port number]` when running  `Main.java`  
+`java Main.java client <port number>`
