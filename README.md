@@ -32,6 +32,11 @@ To get this running on mininet:
   `sudo apt-get update `  
   `sudo apt upgrade gradle `  
   
+ 
+ ## TO PREPARE SYSTEMS:
+ If installed correcctly, the daemon for MongoDB should be up and running once installed. To check, type:  
+ `sudo systemctl status mongodbd`  
+  
 ## TO RUN:  
 To run in server mode:  
 pass in arguments `server [port number]` when running `Main.java`  
