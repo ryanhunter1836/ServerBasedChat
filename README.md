@@ -36,6 +36,9 @@ To get this running on mininet:
  ## TO PREPARE SYSTEMS:
  If installed correcctly, the daemon for MongoDB should be up and running once installed. To check, type:  
  `sudo systemctl status mongodbd`  
+ As for Gradle, we need to build the jar file for the dependencies to be handled. To build the jar file, type:  
+ `gradle build`
+ `gradle buildDependencies`  
   
 ## TO RUN:  
 To run in server mode:  
