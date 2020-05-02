@@ -33,4 +33,7 @@ To get this running on mininet:
   `sudo apt upgrade gradle `  
   
 ## TO RUN:  
-
+To run in server mode:  
+pass in arguments `server [port number]` when running `Main.java`  
+To run in client mode:  
+pass in arguments `client [port number]` when running  `Main.java`  
