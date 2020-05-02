@@ -1,8 +1,8 @@
 # ServerBasedChat
 
-SETUP AND CONFIGURATION
+## SETUP AND CONFIGURATION
 
-Configuring database
+### Configuring database  
 MongoDB was chosen in order to be a compromise since there was a desire to have both flat files and a database management system. The most recent version that can run on mininet is 4.0.18. 
 
 Installation of MongoDB server onto mininet, taken from https://docs.mongodb.com/v4.0/tutorial/install-mongodb-on-ubuntu/: 
@@ -15,7 +15,7 @@ Installation of MongoDB server onto mininet, taken from https://docs.mongodb.com
  
   `sudo apt-get install -y mongodb-org=4.0.18 mongodb-org-server=4.0.18 mongodb-org-shell=4.0.18 mongodb-org-mongos=4.0.18 mongodb-org-tools=4.0.18`
 
-Java 
+### Java  
 For this project, we settled on Java 11 since it’s the current LTS. 
 To get this running on mininet: 
 
@@ -24,7 +24,7 @@ To get this running on mininet:
   `sudo apt update`  
   `sudo apt install openjdk-11-jdk`  
 
-Gradle 
+### Gradle  
 For the management of our dependencies, we’re using gradle. Since we’re using Java 11, gradle version 5 or greater is required.  
 To get this running on mininet: 
 
@@ -32,5 +32,5 @@ To get this running on mininet:
   `sudo apt-get update `  
   `sudo apt upgrade gradle `  
   
-TO RUN:
+## TO RUN:  
 
