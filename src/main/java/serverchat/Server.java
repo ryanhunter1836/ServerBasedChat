@@ -1,8 +1,13 @@
 package main.java.serverchat;
 
+import main.java.serverchat.database.Database;
+
 import java.net.*;
+import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Random;
 import java.util.concurrent.*;
+
 import java.io.*;
 
 public class Server implements Message
@@ -10,7 +15,9 @@ public class Server implements Message
     int portNumber;
     private boolean listening = false;
     private DatagramSocket ds;
-    Random random;
+    private Random random;
+    private static Hashtable<String, ServerToClientConnectionInstance> connectedClients;
+    private Database database;
 
     private final ExecutorService threadPool;
 
@@ -19,7 +26,9 @@ public class Server implements Message
         portNumber = port;
         //Create the thread pool
         threadPool = Executors.newFixedThreadPool(10);
+        database = new Database();
         random = new Random();
+        connectedClients = new Hashtable<>();
     }
 
     //Entry point for the UDP authentication server
@@ -48,19 +57,22 @@ public class Server implements Message
                 continue;
             }
 
-            //*********
-            //Check if the client is on the list of subscribers
-            //String clientId = message.clientId();
-            //*********
-
             String XRES;
             try
             {
-                XRES = generateAndSendChallenge(clientDatagram);
+                XRES = generateAndSendChallenge(clientDatagram, message);
             }
             catch(IOException e)
             {
                 System.out.println("Error sending packet");
+                sendAuthResult(clientDatagram, false);
+                continue;
+            }
+
+            // If XRES could not be generated because client doesn't exist, return AUTH_FAIL and continue
+            if (XRES.equals(""))
+            {
+                sendAuthResult(clientDatagram, false);
                 continue;
             }
 
@@ -75,10 +87,15 @@ public class Server implements Message
             {
                 System.out.println("Another client is currently in the connection phase");
                 //Ignore the request
+                // Why is a request being ignored? At least send something back so the client knows to not wait anymore.
+                // AUTH_FAIL is not ideal in this situation, but at least it's something.
+                sendAuthResult(clientDatagram, false);
             }
 
-            //Compare the server and client hashes
+            // Either needs to be the line above (if client just puts in key) or line below ifthe client has to run the algorithm themselves
             String RES = message.message();
+            
+            // Compare the client response to server response
             if(RES.equals(XRES))
             {
                 try
@@ -109,13 +126,31 @@ public class Server implements Message
         stop();
     }
 
-    //Returns the XRES
-    private String generateAndSendChallenge(DatagramPacket datagram) throws IOException
+    /**
+     * Generates the challenge that is used in 2.2
+     * @param datagram The datagram received from the client
+     * @param message The decoded message from the datagram
+     * @return A string with the expected result (XRES)
+     * @throws IOException
+     */
+    private String generateAndSendChallenge(DatagramPacket datagram, DecodedMessage message) throws IOException
     {
         //Generate the challenge
         int rand = (int)(Math.random()*100); //generates a random number to confirm
+
+        // Obtain the client's private key from the database
+        String clientPrivateKey;
+        try
+        {
+            clientPrivateKey = database.getClient(message.clientId()).getString("privateKey");
+        } catch (Exception e)
+        {
+            System.out.println("Unable to obtain private key for client: " + message.clientId());
+            return "";
+        }
+
         //Generate the hash
-        String XRES = SecretKeyGenerator.hash1(rand+"");
+        String XRES = SecretKeyGenerator.hash1(rand+clientPrivateKey);
 
         //Encode the random string as a challenge message
         EncodedMessage encodedMessage = (EncodedMessage)MessageFactory.encode(MessageType.CHALLENGE, Integer.toString(rand));
@@ -128,20 +163,42 @@ public class Server implements Message
         return XRES;
     }
 
-    private void sendAuthResult(DatagramPacket datagram, boolean authSuccessful) throws IOException
-    {
+    private void sendAuthResult(DatagramPacket datagram, boolean authSuccessful) throws IOException {
         DatagramPacket authDatagram;
         EncodedMessage message;
         int clientPortNumber = -1;
 
+        // Craft a return message and start the TCP listener
         if(authSuccessful)
         {
-            //NEED TO GENERATE A RANDOM COOKIE TO SEND TO THE CLIENT
-
             //Get successful auth encoded message
-            //Client port number will be between 5000 - 5100
+            //Client port number will be between 5000 - 6000
             clientPortNumber = random.nextInt(1000) + 5000;
-            message = (EncodedMessage)MessageFactory.encode(MessageType.AUTH_SUCCESS, Integer.toString(clientPortNumber));
+
+            // Generate a random cookie and respective encryption key
+            // The cookie will be between 10,000 - 20,000
+            int cookie = (int)(Math.random()*10000) + 10000;
+
+            DecodedMessage clientMessage = (DecodedMessage)MessageFactory.decode(datagram);
+            String clientPrivateKey = database.getClient(clientMessage.clientId()).getString("privateKey");
+            String cookieHash = SecretKeyGenerator.hash2(cookie+clientPrivateKey);
+            database.setClientEncryptionKey(clientMessage.clientId(), cookieHash);
+
+            //Start a thread to wait for a connection from the client over TCP
+            ServerToClientConnectionInstance task = new ServerToClientConnectionInstance(
+                    this, clientPortNumber, clientMessage.clientId(), cookieHash);
+
+            //Add the task to the list of connected clients for easy access later
+            connectedClients.put(clientMessage.clientId(), task);
+
+            threadPool.execute(task);
+
+            // Craft message
+            HashMap<String, String> messageMap = new HashMap<>();
+            messageMap.put("MessageType", Integer.toString(MessageType.AUTH_SUCCESS.ordinal()));
+            messageMap.put("RandCookie", Integer.toString(cookie));
+            messageMap.put("PortNumber", Integer.toString(clientPortNumber));
+            message = MessageFactory.encode(messageMap);
         }
         else
         {
@@ -153,13 +210,28 @@ public class Server implements Message
         authDatagram.setAddress(datagram.getAddress());
         authDatagram.setPort(datagram.getPort());
         ds.send(authDatagram);
+    }
 
-        //Start a new TCP listener is auth successful
-        if(authSuccessful)
-        {
-            //Start a thread to wait for a connection from the client over TCP
-            threadPool.execute(new ServerToClientConnectionInstance(clientPortNumber, ""));
-        }
+    //Returns the routing information for the request client
+    private ServerToClientConnectionInstance getClientTask(String clientId)
+    {
+        return connectedClients.get(clientId);
+    }
+
+    /**
+     * Sends a message to a specific client
+     * @param message The message to send
+     * @param clientID The ID of the client to send to
+     */
+    public void sendMessageToClient(EncodedMessage message, String clientID) {
+        ServerToClientConnectionInstance client = getClientTask(clientID);
+        client.receiveMessage(message);
+    }
+
+    //Method called when a connection terminates
+    public void disconnect(String clientId)
+    {
+        connectedClients.remove(clientId);
     }
     
     //Call the stop method to gracefully shutdown the server
@@ -169,7 +241,7 @@ public class Server implements Message
     }
 
     //Dispose of the thread pool and close any lingering connections.  Copied from documentation
-    private void  shutdownAndAwaitTermination(ExecutorService pool)
+    private void shutdownAndAwaitTermination(ExecutorService pool)
     {
         pool.shutdown(); // Disable new tasks from being submitted
         try
