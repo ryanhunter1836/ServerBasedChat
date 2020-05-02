@@ -25,9 +25,12 @@ public class MessageFactory implements Message
         return new EncodedMessage(entries);
     }
 
+    public static Message getDecodedMessageObj(DatagramPacket datagram) { return new DecodedMessage(datagram); }
+
     public static Message decode(DatagramPacket datagram)
     {
-        return new DecodedMessage(datagram);
+        String message = new String(datagram.getData(), 0, datagram.getLength());
+        return new DecodedMessage(message);
     }
 
     /**
