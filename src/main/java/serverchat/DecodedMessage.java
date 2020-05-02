@@ -16,12 +16,12 @@ public class DecodedMessage implements Message
     public String message() { return message; }
     public String getField(String field) { return (String) json.get(field); }
 
+
+
     public DecodedMessage(DatagramPacket datagram)
     {
         json = (JSONObject)JSONValue.parse(new String(datagram.getData(), 0, datagram.getLength()));
-        message = (String)json.get("Message");
-        clientId = (String)json.get("ClientID");
-        int messageTypeIndex = Math.toIntExact((long)json.get("MessageType"));
+        int messageTypeIndex = Integer.parseInt((String)json.get("MessageType"));
         messageType = MessageType.values()[messageTypeIndex];
     }
 

@@ -7,34 +7,27 @@ import java.util.*;
 public class Client implements Message
 {
 	//Port number of authentication server
-	 int portNumber;
-	 int sessionPortNumber;
+	 private int portNumber;
+	 private int sessionPortNumber;
+	 private int randCookie;
+	 private final String userID;
+	 private final String secretKey;
 
-	public Client(int port)
+	public Client(int port, String keyfilePath) throws FileNotFoundException
 	{
 		portNumber = port;
 		sessionPortNumber = -1;
+
+		//Load the keyfile
+		File file = new File(keyfilePath);
+		Scanner scanner = new Scanner(file);
+		userID = scanner.nextLine();
+		secretKey = scanner.nextLine();
 	}
 	
 	public void startClient() throws IOException
 	{
-		/*
-		//NOTE: CLIENT ID IS NOT OPTIONAL, IT IS PRESET
-		System.out.print("What is your user name/Client ID? ");
-        String userID = input.nextLine();
-        System.out.println("Your userID is: "+userID);
-
-		 */
-
-		String userID = "test"; // need to figure out a way to get access to database from server
-    	boolean authenticated;
-    	//Need to delay the client thread for a second to give the server time to boot up
-    	try
-		{
-			Thread.sleep(1000);
-		}
-    	catch(InterruptedException e) {}
-
+    	boolean authenticated = false;
     	authenticated = authenticate(userID);
     	if(authenticated)
 		{
@@ -50,7 +43,7 @@ public class Client implements Message
 		byte buffer[] = new byte[Message.PacketLength];
 
 		//Create an authentication request
-		EncodedMessage encodedMessage = (EncodedMessage)MessageFactory.encode(MessageType.HELLO, clientId, "_"); // get clientid from database
+		EncodedMessage encodedMessage = (EncodedMessage)MessageFactory.encode(MessageType.HELLO, clientId, userID); // get clientid from database
 
 		//And send to the server
 		DatagramPacket serverDatagram = new DatagramPacket(encodedMessage.encodedMessage(), encodedMessage.encodedMessage().length, serverIp, portNumber);
@@ -74,7 +67,7 @@ public class Client implements Message
 		// Get XRES using random num and private key 
 		// String XRES = SecretKeyGenerator.hash1(randNum+""); // private key from database given clientID
 		//Run the hashing algorithm to get a response
-		String RES = SecretKeyGenerator.hash1(randNum+""); // get user input to verify
+		String RES = SecretKeyGenerator.hash1(randNum+secretKey); // get user input to verify
 
 		encodedMessage = (EncodedMessage)MessageFactory.encode(MessageType.RESPONSE, clientId, RES);
 
@@ -87,11 +80,13 @@ public class Client implements Message
 		serverDatagram = new DatagramPacket(buffer, buffer.length);
 		ds.receive(serverDatagram);
 
-		decodedMessage = (DecodedMessage)MessageFactory.decode(serverDatagram);
+		//Get a nonstandard decoded message
+		decodedMessage = (DecodedMessage)MessageFactory.getDecodedMessageObj(serverDatagram);
 		if(decodedMessage.messageType() == MessageType.AUTH_SUCCESS)
 		{
 			System.out.println("Authentication success");
-			sessionPortNumber = Integer.parseInt(decodedMessage.message());
+			sessionPortNumber = Integer.parseInt(decodedMessage.getField("PortNumber"));
+			randCookie = Integer.parseInt(decodedMessage.getField("RandCookie"));
 			return true;
 		}
 		else

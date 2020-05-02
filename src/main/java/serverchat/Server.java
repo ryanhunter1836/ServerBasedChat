@@ -136,7 +136,7 @@ public class Server implements Message
     private String generateAndSendChallenge(DatagramPacket datagram, DecodedMessage message) throws IOException
     {
         //Generate the challenge
-        int rand = (int)(Math.random()*100); //generates a random number to confirm
+        int rand = (random.nextInt()*100); //generates a random number to confirm
 
         // Obtain the client's private key from the database
         String clientPrivateKey;
@@ -177,7 +177,7 @@ public class Server implements Message
 
             // Generate a random cookie and respective encryption key
             // The cookie will be between 10,000 - 20,000
-            int cookie = (int)(Math.random()*10000) + 10000;
+            int cookie = (random.nextInt()*10000) + 10000;
 
             DecodedMessage clientMessage = (DecodedMessage)MessageFactory.decode(datagram);
             String clientPrivateKey = database.getClient(clientMessage.clientId()).getString("privateKey");
