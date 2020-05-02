@@ -28,9 +28,9 @@ Gradle
 For the management of our dependencies, we’re using gradle. Since we’re using Java 11, gradle version 5 or greater is required.  
 To get this running on mininet: 
 
-  sudo add-apt-repository ppa:cwchien/gradle 
-  sudo apt-get update 
-  sudo apt upgrade gradle 
-
+  `sudo add-apt-repository ppa:cwchien/gradle `  
+  `sudo apt-get update `  
+  `sudo apt upgrade gradle `  
+  
 TO RUN:
 
