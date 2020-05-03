@@ -138,8 +138,9 @@ public class Client implements Message
 		// keep reading until "Log off" is input
 		while (!line.equals("Log off"))
 		{
+		try {
+			clientSocket.setSoTimeout(60000);
 			line = scanner.nextLine();
-
 			//Check if this is a chat request
 			if(!inChat)
 			{
@@ -150,10 +151,12 @@ public class Client implements Message
 					EncodedMessage message = (EncodedMessage)MessageFactory.encode(MessageType.CHAT_REQUEST, clientId);
 					//Send the message to the server
 					output.println(message);
-
 					//Wait for the chat response
+					}
 				}
-			}
+				}catch(SocketException e) {
+					System.out.println("Socket Timeout. Logging off...");
+				}
 		}
 
 		// close the connection
