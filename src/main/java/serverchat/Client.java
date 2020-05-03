@@ -41,7 +41,27 @@ public class Client implements Message
 		secretKey = scanner.nextLine();
 	}
 
-	private boolean authenticate() throws IOException
+	/**
+	 * Starts client authentication process
+	 * @throws IOException
+	 */
+	public void startClient() throws IOException
+	{
+    	boolean authenticated = authenticate(userID);
+    	if(authenticated)
+		{
+			//Connect to the TPC socket for the chat session
+			startChatSession();
+		}
+	}
+
+	/**
+	 * Authenticates client with the server
+	 * @param clientId
+	 * @return
+	 * @throws IOException
+	 */
+	private boolean authenticate(String clientId) throws IOException
 	{
 		DatagramSocket ds = new DatagramSocket();
 		InetAddress serverIp = InetAddress.getLocalHost();
@@ -103,7 +123,10 @@ public class Client implements Message
 		}
 	}
 
-	public void startClient () throws IOException
+	/**
+	 * Starts chat session once clients are authenticated
+	 */
+	private void startChatSession ()
 	{
 		Socket clientSocket = null;
 		PrintWriter output = null;
