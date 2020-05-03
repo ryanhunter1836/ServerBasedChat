@@ -27,25 +27,15 @@ public class Client implements Message
 		userID = scanner.nextLine();
 		secretKey = scanner.nextLine();
 	}
-	
-	public void startClient() throws IOException
-	{
-    	boolean authenticated = authenticate(userID);
-    	if(authenticated)
-		{
-			//Connect to the TPC socket for the chat session
-			startChatSession();
-		}
-	}
 
-	private boolean authenticate(String clientId) throws IOException
+	private boolean authenticate() throws IOException
 	{
 		DatagramSocket ds = new DatagramSocket();
 		InetAddress serverIp = InetAddress.getLocalHost();
 		byte buffer[] = new byte[Message.PacketLength];
 
 		//Create an authentication request
-		EncodedMessage encodedMessage = (EncodedMessage)MessageFactory.encode(MessageType.HELLO, clientId, userID); // get clientid from database
+		EncodedMessage encodedMessage = (EncodedMessage)MessageFactory.encode(MessageType.HELLO, userID, this.userID); // get clientid from database
 
 		//And send to the server
 		DatagramPacket serverDatagram = new DatagramPacket(encodedMessage.encodedMessage(), encodedMessage.encodedMessage().length, serverIp, portNumber);
@@ -70,7 +60,7 @@ public class Client implements Message
 		String encryptionKey = SecretKeyGenerator.hash2(randNum+secretKey);
 		aes = new AES(encryptionKey);
 
-		encodedMessage = MessageFactory.encode(MessageType.RESPONSE, clientId, RES);
+		encodedMessage = MessageFactory.encode(MessageType.RESPONSE, userID, RES);
 
 		//Send the challenge back to the client
 		DatagramPacket respDatagram = new DatagramPacket(encodedMessage.encodedMessage(), encodedMessage.encodedMessage().length, serverIp, portNumber);
@@ -87,7 +77,6 @@ public class Client implements Message
 
 		if(decodedMessage.messageType() == MessageType.AUTH_SUCCESS)
 		{
-			System.out.println("Authentication success");
 			sessionPortNumber = Integer.parseInt(decodedMessage.getField("PortNumber"));
 			randCookie = Integer.parseInt(decodedMessage.getField("RandCookie"));
 			return true;
@@ -99,62 +88,74 @@ public class Client implements Message
 		}
 	}
 
-	private void startChatSession ()
+	public void startClient () throws IOException
 	{
 		Socket clientSocket = null;
 		PrintWriter output = null;
 		BufferedReader input = null;
-		Scanner scanner = null;
+		Scanner scanner = new Scanner(System.in);
 
 		//Connect to the server on the designated port
 		try
 		{
-
-			clientSocket = new Socket(InetAddress.getByName(serverIp), sessionPortNumber);
-
-			//Read input from the console
-			scanner = new Scanner(System.in);
-			output = new PrintWriter(clientSocket.getOutputStream(), true);
-			input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-
-
-			//Send CONNECT message
-			EncodedMessage connectedMessage = MessageFactory.encode(MessageType.CONNECT, Integer.toString(randCookie));
-			output.println(aes.encrypt(connectedMessage.message()));
-			//Receive CONNECTED message
-			String decodedString = aes.decrypt(input.readLine());
-			if(MessageFactory.decode(decodedString).messageType() != MessageType.CONNECTED) {
-				return;
-			}
-
 			// String to read message from input
 			String line = "";
 			boolean inChat = false;
+			boolean connected = false;
 
 			// keep reading until "Log off" is input
-			while (!line.equals("Log off")) {
+			while(true) {
 				try {
-					clientSocket.setSoTimeout(60000);
 					line = scanner.nextLine();
+
+					//Wait for the user to type "Log on"
+					if(!connected) {
+						if(line.equals("Log on")) {
+							//Go through the UDP authentication session
+							if(authenticate()) {
+
+								//Go through the TCP portion of the authentication
+								clientSocket = new Socket(InetAddress.getByName(serverIp), sessionPortNumber);
+
+								output = new PrintWriter(clientSocket.getOutputStream(), true);
+								input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+
+								//Send CONNECT message
+								EncodedMessage connectedMessage = MessageFactory.encode(MessageType.CONNECT, Integer.toString(randCookie));
+								output.println(aes.encrypt(connectedMessage.message()));
+								//Receive CONNECTED message
+								String decodedString = aes.decrypt(input.readLine());
+								if(MessageFactory.decode(decodedString).messageType() != MessageType.CONNECTED) {
+									return;
+								}
+								connected = true;
+								System.out.println("Connected");
+								clientSocket.setSoTimeout(60000);
+								continue;
+							}
+						}
+					}
 
 					//Check if this is a chat request
 					if (!inChat) {
-						StringTokenizer tokenizer = new StringTokenizer(line);
-						if (tokenizer.nextToken().contains("Chat")) {
-							String clientId = tokenizer.nextToken();
-							EncodedMessage message = MessageFactory.encode(MessageType.CHAT_REQUEST, clientId);
-							output.println(aes.encrypt(message.message()));
-
-							String test = input.readLine();
-							test = aes.decrypt(test);
-
-							DecodedMessage chatResp = MessageFactory.decode(test);
-							if (chatResp.messageType() == MessageType.UNREACHABLE) {
-								System.out.println("Client is currently not online");
-							} else {
-								inChat = true;
+						if(line.contains("Chat")) {
+							StringTokenizer tokenizer = new StringTokenizer(line);
+							if (tokenizer.nextToken().contains("Chat")) {
+								String clientId = tokenizer.nextToken();
+								EncodedMessage message = MessageFactory.encode(MessageType.CHAT_REQUEST, clientId);
+								output.println(aes.encrypt(message.message()));
+								DecodedMessage chatResp = MessageFactory.decode(aes.decrypt(input.readLine()));
+								if (chatResp.messageType() == MessageType.UNREACHABLE) {
+									System.out.println("Correspondent unreachable");
+								} else {
+									inChat = true;
+								}
 							}
 						}
+					}
+
+					if(line.equals("Log off")) {
+						break;
 					}
 				}
 				catch(SocketException e) {
