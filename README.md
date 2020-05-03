@@ -5,6 +5,9 @@ You can either download the .zip file from GitHub or you can clone it using the 
 `git clone https://github.com/ryanhunter1836/ServerBasedChat.git`  
 
 ## SETUP AND CONFIGURATION
+### THIS CAN ALL BE PERFORMED WITH ONE COMMAND  
+The code below is in case this command does not work. The file `setup.sh` in the folder should be able to execute all of these commands below:  
+ `bash setup.sh`  
 
 ### Configuring database  
 MongoDB was chosen in order to be a compromise since there was a desire to have both flat files and a database management system. The most recent version that can run on mininet is 4.0.18. 
