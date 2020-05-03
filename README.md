@@ -50,5 +50,5 @@ pass in arguments `server <port number>` when running `Main.java`
 `java Main.java server <port number>`  
   
 To run in client mode:  
-pass in arguments `client <port number>` and `<key path>` when running  `Main.java`. `<key path>` is the path where the keys of the users are held.  
+pass in arguments `client <port number>` and `<key path>` when running  `Main.java`. `<key path>` is the path where the keys of the users are held (for example, the path can be `./database/key1.txt`).  
 `java Main.java client <port number> <key path>`
