@@ -22,8 +22,8 @@ public class DecodedMessage implements Message
     {
         if(standard)
         {
-            json = (JSONObject)JSONValue.parse(new String(datagram.getData(), datagram.getData().length));
-            int messageTypeIndex = Math.toIntExact((long)json.get("MessageType"));
+            json = (JSONObject)JSONValue.parse(new String(datagram.getData(), 0, datagram.getData().length));
+            int messageTypeIndex = Integer.parseInt((String)json.get("MessageType"));
             messageType = MessageType.values()[messageTypeIndex];
 
             // Attempt to get the "Message" field
@@ -57,7 +57,7 @@ public class DecodedMessage implements Message
         if(standard)
         {
             json = (JSONObject)JSONValue.parse(message);
-            int messageTypeIndex = Math.toIntExact((long)json.get("MessageType"));
+            int messageTypeIndex = Integer.parseInt((String)json.get("MessageType"));
             messageType = MessageType.values()[messageTypeIndex];
 
             // Attempt to get the "Message" field

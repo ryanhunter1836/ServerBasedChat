@@ -41,13 +41,13 @@ public class AES {
      * @param message The message to encrypt
      * @return The message in a base64 encrypted format
      */
-    public String encrypt(byte[] message) {
+    public String encrypt(String message) {
         byte[] encryptedMessage;
 
         try {
             Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
             cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-            encryptedMessage = cipher.doFinal(message);
+            encryptedMessage = cipher.doFinal(message.getBytes());
         } catch (Exception e) {
             System.out.println("Ran into issues encrypting via AES.");
             return null;

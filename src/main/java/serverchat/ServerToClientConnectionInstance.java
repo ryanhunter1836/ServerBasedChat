@@ -18,6 +18,7 @@ public class ServerToClientConnectionInstance implements Runnable, Message
     private Server server;
     private Database database;
     PrintWriter out = null;
+    int randCookie;
 
     //Object to hold a connection between the server and the client
     public ServerToClientConnectionInstance(Server server, int portNumber, String clientID, String key)
@@ -45,10 +46,6 @@ public class ServerToClientConnectionInstance implements Runnable, Message
         {
             ServerSocket serverSocket = new ServerSocket(portNumber);
             Socket socket = serverSocket.accept();
-
-            //Receive the random cookie from the client
-
-            clientConnected = true;
             database.makeClientConnectable(userName);
 
             //Setup the input and output streams for the socket
@@ -61,6 +58,23 @@ public class ServerToClientConnectionInstance implements Runnable, Message
             {
                 String decryptedInput = aes.decrypt(inputLine);
                 DecodedMessage message = MessageFactory.decode(decryptedInput);
+
+                //Check to make sure the first message in the exchange is the "CONNECT" message
+                if(!clientConnected)
+                {
+                    if(message.messageType() != MessageType.CONNECT)
+                    {
+                        //Kill the session
+                        break;
+                    }
+                    //Get the randCookie
+                    randCookie = Integer.parseInt(message.message());
+
+                    //Send a CONNECTED message to the client
+                    EncodedMessage encodedMessage = MessageFactory.encode(MessageType.CONNECTED, "");
+                    out.println(aes.encrypt(encodedMessage.message()));
+                    clientConnected = true;
+                }
 
                 if (message.message().equals("Log off"))
                 {
@@ -78,7 +92,6 @@ public class ServerToClientConnectionInstance implements Runnable, Message
                     case HISTORY_REQ:
                         sendChatHistory(message.getField("ClientID"));
                 }
-
             }
             in.close();
             out.close();
@@ -102,7 +115,7 @@ public class ServerToClientConnectionInstance implements Runnable, Message
         if(clientConnected && out != null)
         {
             // Encrypt the message and send the message
-            out.println(aes.encrypt(message.encodedMessage()));
+            out.println(aes.encrypt(message.message()));
         }
     }
 
@@ -112,7 +125,8 @@ public class ServerToClientConnectionInstance implements Runnable, Message
      */
     public void startChatSession(String clientID)
     {
-        if (database.getClient(clientID).getBoolean("connectable"))
+        Document client = database.getClient(clientID);
+        if (client != null && client.getBoolean("connectable"))
         {
             // Mark the clients in the database as connected to each other
             sessionInfo[0] = database.connectClients(userName, clientID);

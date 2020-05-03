@@ -32,8 +32,9 @@ public class Server implements Message
     }
 
     //Entry point for the UDP authentication server
-    public void start() throws IOException
+    public void start() throws IOException, UnknownHostException
     {
+        System.out.println("IP Address of Server: " + InetAddress.getLocalHost());
         listening = true;
         ds = new DatagramSocket(portNumber);
 
@@ -48,7 +49,7 @@ public class Server implements Message
             ds.receive(clientDatagram);
 
             //Decode the message
-            DecodedMessage message = ((DecodedMessage)MessageFactory.decode(clientDatagram));
+            DecodedMessage message = MessageFactory.decode(clientDatagram);
             //Make sure the message is a hello message
             if(message.messageType() != MessageType.HELLO)
             {
@@ -84,28 +85,22 @@ public class Server implements Message
 
             //Wait for the client to come back with a response
             ds.receive(clientDatagram);
-            message = ((DecodedMessage) MessageFactory.decode(clientDatagram));
+            message = MessageFactory.decode(clientDatagram);
             if(message.messageType() != MessageType.RESPONSE)
             {
                 System.out.println("Another client is currently in the connection phase");
-                //Ignore the request
-                // Why is a request being ignored? At least send something back so the client knows to not wait anymore.
-                // AUTH_FAIL is not ideal in this situation, but at least it's something.
                 sendAuthResult(clientDatagram, false, -1);
             }
 
-            // Either needs to be the line above (if client just puts in key) or line below ifthe client has to run the algorithm themselves
             String RES = message.message();
             
             // Compare the client response to server response
             if(RES.equals(XRES))
             {
-                try
-                {
+                try {
                     sendAuthResult(clientDatagram, true, rand);
                 }
-                catch(IOException e)
-                {
+                catch(IOException e) {
                     System.out.println("Error sending packet");
                     continue;
                 }
@@ -113,12 +108,10 @@ public class Server implements Message
             //Client is not authenticated
             else
             {
-                try
-                {
+                try {
                     sendAuthResult(clientDatagram, false, -1);
                 }
-                catch(IOException e)
-                {
+                catch(IOException e) {
                     System.out.println("Error sending packet");
                     continue;
                 }
@@ -152,7 +145,7 @@ public class Server implements Message
         String XRES = SecretKeyGenerator.hash1(rand+clientPrivateKey);
 
         //Encode the random string as a challenge message
-        EncodedMessage encodedMessage = (EncodedMessage)MessageFactory.encode(MessageType.CHALLENGE, Integer.toString(rand));
+        EncodedMessage encodedMessage = MessageFactory.encode(MessageType.CHALLENGE, Integer.toString(rand));
 
         //Send the challenge back to the client
         DatagramPacket challengeDatagram = new DatagramPacket(encodedMessage.encodedMessage(), encodedMessage.encodedMessage().length);
@@ -201,7 +194,7 @@ public class Server implements Message
             message = MessageFactory.encode(messageMap);
 
             //Encrypt the message
-            encryptedMessage = new AES(encryptionKey).encrypt(message.encodedMessage()).getBytes();
+            encryptedMessage = new AES(encryptionKey).encrypt(message.message()).getBytes();
         }
         else
         {
