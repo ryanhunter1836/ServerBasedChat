@@ -25,12 +25,13 @@ public class MessageFactory implements Message
         return new EncodedMessage(entries);
     }
 
-    public static Message getDecodedMessageObj(DatagramPacket datagram) { return new DecodedMessage(datagram); }
+    public static Message getDecodedMessageObj(DatagramPacket datagram) { return new DecodedMessage(datagram, false); }
+    public static Message getDecodedMessageObj(String message) { return new DecodedMessage(message, false); }
 
     public static Message decode(DatagramPacket datagram)
     {
         String message = new String(datagram.getData(), 0, datagram.getLength());
-        return new DecodedMessage(message);
+        return new DecodedMessage(message, true);
     }
 
     /**
@@ -40,6 +41,6 @@ public class MessageFactory implements Message
      */
     public static DecodedMessage decode(String message)
     {
-        return new DecodedMessage(message);
+        return new DecodedMessage(message, true);
     }
 }

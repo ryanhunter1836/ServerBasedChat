@@ -12,6 +12,7 @@ public class Client implements Message
 	 private int randCookie;
 	 private final String userID;
 	 private final String secretKey;
+	private AES aes;
 
 	public Client(int port, String keyfilePath) throws FileNotFoundException
 	{
@@ -68,6 +69,9 @@ public class Client implements Message
 		// String XRES = SecretKeyGenerator.hash1(randNum+""); // private key from database given clientID
 		//Run the hashing algorithm to get a response
 		String RES = SecretKeyGenerator.hash1(randNum+secretKey); // get user input to verify
+		//Also generate the encryption key
+		String encryptionKey = SecretKeyGenerator.hash2(randNum+secretKey);
+		aes = new AES(encryptionKey);
 
 		encodedMessage = (EncodedMessage)MessageFactory.encode(MessageType.RESPONSE, clientId, RES);
 
@@ -80,8 +84,11 @@ public class Client implements Message
 		serverDatagram = new DatagramPacket(buffer, buffer.length);
 		ds.receive(serverDatagram);
 
-		//Get a nonstandard decoded message
-		decodedMessage = (DecodedMessage)MessageFactory.getDecodedMessageObj(serverDatagram);
+		//Get a nonstandard decoded message.  This message is also encoded
+
+		String decodedString = aes.decrypt(new String(serverDatagram.getData(), serverDatagram.getLength()));
+		decodedMessage = (DecodedMessage)MessageFactory.getDecodedMessageObj(decodedString);
+
 		if(decodedMessage.messageType() == MessageType.AUTH_SUCCESS)
 		{
 			System.out.println("Authentication success");
@@ -124,27 +131,28 @@ public class Client implements Message
 			System.out.println(i);
 		}
 
-		// string to read message from input
+		// String to read message from input
 		String line = "";
-		// keep reading until "Over" is input
+		boolean inChat = false;
+
+		// keep reading until "Log off" is input
 		while (!line.equals("Log off"))
 		{
-			try
+			line = scanner.nextLine();
+
+			//Check if this is a chat request
+			if(!inChat)
 			{
-				line = scanner.nextLine();
-				output.println(line);
-				//Receive an echo from the server
-				String response = "";
-				if((response = input.readLine()) == null)
-				{
-					//Socket is closed
-					break;
+				StringTokenizer tokenizer = new StringTokenizer(line);
+				if(tokenizer.nextToken().contains("Chat")) {
+					//Get the client ID
+					String clientId = tokenizer.nextToken();
+					EncodedMessage message = (EncodedMessage)MessageFactory.encode(MessageType.CHAT_REQUEST, clientId);
+					//Send the message to the server
+					output.println(message);
+
+					//Wait for the chat response
 				}
-				System.out.println(response);
-			}
-			catch(IOException i)
-			{
-				System.out.println(i);
 			}
 		}
 

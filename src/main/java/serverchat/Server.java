@@ -58,21 +58,23 @@ public class Server implements Message
             }
 
             String XRES;
+            //Generate the challenge
+            int rand = (random.nextInt()*10000) + 10000; //generates a random number to confirm
             try
             {
-                XRES = generateAndSendChallenge(clientDatagram, message);
+                XRES = generateAndSendChallenge(clientDatagram, message, rand);
             }
             catch(IOException e)
             {
                 System.out.println("Error sending packet");
-                sendAuthResult(clientDatagram, false);
+                sendAuthResult(clientDatagram, false, -1);
                 continue;
             }
 
             // If XRES could not be generated because client doesn't exist, return AUTH_FAIL and continue
             if (XRES.equals(""))
             {
-                sendAuthResult(clientDatagram, false);
+                sendAuthResult(clientDatagram, false, -1);
                 continue;
             }
 
@@ -89,7 +91,7 @@ public class Server implements Message
                 //Ignore the request
                 // Why is a request being ignored? At least send something back so the client knows to not wait anymore.
                 // AUTH_FAIL is not ideal in this situation, but at least it's something.
-                sendAuthResult(clientDatagram, false);
+                sendAuthResult(clientDatagram, false, -1);
             }
 
             // Either needs to be the line above (if client just puts in key) or line below ifthe client has to run the algorithm themselves
@@ -100,7 +102,7 @@ public class Server implements Message
             {
                 try
                 {
-                    sendAuthResult(clientDatagram, true);
+                    sendAuthResult(clientDatagram, true, rand);
                 }
                 catch(IOException e)
                 {
@@ -113,7 +115,7 @@ public class Server implements Message
             {
                 try
                 {
-                    sendAuthResult(clientDatagram, false);
+                    sendAuthResult(clientDatagram, false, -1);
                 }
                 catch(IOException e)
                 {
@@ -133,11 +135,8 @@ public class Server implements Message
      * @return A string with the expected result (XRES)
      * @throws IOException
      */
-    private String generateAndSendChallenge(DatagramPacket datagram, DecodedMessage message) throws IOException
+    private String generateAndSendChallenge(DatagramPacket datagram, DecodedMessage message, int rand) throws IOException
     {
-        //Generate the challenge
-        int rand = (random.nextInt()*100); //generates a random number to confirm
-
         // Obtain the client's private key from the database
         String clientPrivateKey;
         try
@@ -163,10 +162,11 @@ public class Server implements Message
         return XRES;
     }
 
-    private void sendAuthResult(DatagramPacket datagram, boolean authSuccessful) throws IOException {
+    private void sendAuthResult(DatagramPacket datagram, boolean authSuccessful, int rand) throws IOException {
         DatagramPacket authDatagram;
         EncodedMessage message;
         int clientPortNumber = -1;
+        byte[] encryptedMessage = null;
 
         // Craft a return message and start the TCP listener
         if(authSuccessful)
@@ -181,12 +181,12 @@ public class Server implements Message
 
             DecodedMessage clientMessage = (DecodedMessage)MessageFactory.decode(datagram);
             String clientPrivateKey = database.getClient(clientMessage.clientId()).getString("privateKey");
-            String cookieHash = SecretKeyGenerator.hash2(cookie+clientPrivateKey);
-            database.setClientEncryptionKey(clientMessage.clientId(), cookieHash);
+            String encryptionKey = SecretKeyGenerator.hash2(rand+clientPrivateKey);
+            database.setClientEncryptionKey(clientMessage.clientId(), encryptionKey);
 
             //Start a thread to wait for a connection from the client over TCP
             ServerToClientConnectionInstance task = new ServerToClientConnectionInstance(
-                    this, clientPortNumber, clientMessage.clientId(), cookieHash);
+                    this, clientPortNumber, clientMessage.clientId(), encryptionKey);
 
             //Add the task to the list of connected clients for easy access later
             connectedClients.put(clientMessage.clientId(), task);
@@ -199,6 +199,9 @@ public class Server implements Message
             messageMap.put("RandCookie", Integer.toString(cookie));
             messageMap.put("PortNumber", Integer.toString(clientPortNumber));
             message = MessageFactory.encode(messageMap);
+
+            //Encrypt the message
+            encryptedMessage = new AES(encryptionKey).encrypt(message.encodedMessage()).getBytes();
         }
         else
         {
@@ -206,7 +209,8 @@ public class Server implements Message
         }
 
         //Send the result to the client
-        authDatagram = new DatagramPacket(message.encodedMessage(), message.encodedMessage().length);
+        authDatagram = new DatagramPacket(encryptedMessage == null ? message.encodedMessage() : encryptedMessage,
+                encryptedMessage == null ? message.encodedMessage().length : encryptedMessage.length);
         authDatagram.setAddress(datagram.getAddress());
         authDatagram.setPort(datagram.getPort());
         ds.send(authDatagram);

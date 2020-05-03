@@ -45,6 +45,9 @@ public class ServerToClientConnectionInstance implements Runnable, Message
         {
             ServerSocket serverSocket = new ServerSocket(portNumber);
             Socket socket = serverSocket.accept();
+
+            //Receive the random cookie from the client
+
             clientConnected = true;
             database.makeClientConnectable(userName);
 
@@ -52,8 +55,6 @@ public class ServerToClientConnectionInstance implements Runnable, Message
             out = new PrintWriter(socket.getOutputStream(), true);
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            //This is just a test method that echoes input back to the client.
-            // ADD CHAT SESSION LOGIC HERE
             String inputLine = "";
             //Read until the client disconnects
             while ((inputLine = in.readLine()) != null)

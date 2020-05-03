@@ -18,35 +18,68 @@ public class DecodedMessage implements Message
 
 
 
-    public DecodedMessage(DatagramPacket datagram)
+    public DecodedMessage(DatagramPacket datagram, boolean standard)
     {
-        json = (JSONObject)JSONValue.parse(new String(datagram.getData(), 0, datagram.getLength()));
-        int messageTypeIndex = Integer.parseInt((String)json.get("MessageType"));
-        messageType = MessageType.values()[messageTypeIndex];
+        if(standard)
+        {
+            json = (JSONObject)JSONValue.parse(new String(datagram.getData(), datagram.getData().length));
+            int messageTypeIndex = Math.toIntExact((long)json.get("MessageType"));
+            messageType = MessageType.values()[messageTypeIndex];
+
+            // Attempt to get the "Message" field
+            try {
+                this.message = (String)json.get("Message");
+            } catch (Exception e) {
+                this.message = null;
+            }
+
+            // Attempt to get the "ClientID" field
+            try {
+                this.clientId = (String)json.get("ClientID");
+            } catch (Exception e) {
+                this.clientId = null;
+            }
+        }
+        else
+        {
+            json = (JSONObject)JSONValue.parse(new String(datagram.getData(), 0, datagram.getLength()));
+            int messageTypeIndex = Integer.parseInt((String)json.get("MessageType"));
+            messageType = MessageType.values()[messageTypeIndex];
+        }
     }
 
     /**
      * Decodes a json string from a message with multiple fields
      * @param message The message as a String
      */
-    public DecodedMessage(String message)
+    public DecodedMessage(String message, boolean standard)
     {
-        json = (JSONObject)JSONValue.parse(message);
-        int messageTypeIndex = Math.toIntExact((long)json.get("MessageType"));
-        messageType = MessageType.values()[messageTypeIndex];
+        if(standard)
+        {
+            json = (JSONObject)JSONValue.parse(message);
+            int messageTypeIndex = Math.toIntExact((long)json.get("MessageType"));
+            messageType = MessageType.values()[messageTypeIndex];
 
-        // Attempt to get the "Message" field
-        try {
-            this.message = (String)json.get("Message");
-        } catch (Exception e) {
-            this.message = null;
+            // Attempt to get the "Message" field
+            try {
+                this.message = (String)json.get("Message");
+            } catch (Exception e) {
+                this.message = null;
+            }
+
+            // Attempt to get the "ClientID" field
+            try {
+                this.clientId = (String)json.get("ClientID");
+            } catch (Exception e) {
+                this.clientId = null;
+            }
+        }
+        else
+        {
+            json = (JSONObject)JSONValue.parse(message);
+            int messageTypeIndex = Integer.parseInt((String)json.get("MessageType"));
+            messageType = MessageType.values()[messageTypeIndex];
         }
 
-        // Attempt to get the "ClientID" field
-        try {
-            this.clientId = (String)json.get("ClientID");
-        } catch (Exception e) {
-            this.clientId = null;
-        }
     }
 }
