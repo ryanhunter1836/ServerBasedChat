@@ -57,11 +57,17 @@ public class Client implements Message
 	 */
 	public void startClient() throws IOException
 	{
-    	boolean authenticated = authenticate(userID);
-    	if(authenticated)
-		{
-			//Connect to the TPC socket for the chat session
-			startChatSession();
+		String line = "";
+    	while (!line.equals("Log on")) {
+    		Scanner scanner = new Scanner(System.in);
+    		try {
+    			line = scanner.nextLine();
+    			if (line.equals("Log on") && authenticate(userID)) {
+					startChatSession();
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -105,7 +111,7 @@ public class Client implements Message
 		String encryptionKey = SecretKeyGenerator.hash2(randNum+secretKey);
 		aes = new AES(encryptionKey);
 
-		encodedMessage = MessageFactory.encode(MessageType.RESPONSE, userID, RES);
+		encodedMessage = MessageFactory.encode(MessageType.RESPONSE, clientId, RES);
 
 		//Send the challenge back to the client
 		DatagramPacket respDatagram = new DatagramPacket(encodedMessage.encodedMessage(), encodedMessage.encodedMessage().length, serverIp, portNumber);
@@ -122,6 +128,7 @@ public class Client implements Message
 
 		if(decodedMessage.messageType() == MessageType.AUTH_SUCCESS)
 		{
+			System.out.println("Authentication success");
 			sessionPortNumber = Integer.parseInt(decodedMessage.getField("PortNumber"));
 			randCookie = Integer.parseInt(decodedMessage.getField("RandCookie"));
 			return true;
