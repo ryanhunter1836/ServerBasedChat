@@ -5,6 +5,9 @@ You can either download the .zip file from GitHub or you can clone it using the 
 `git clone https://github.com/ryanhunter1836/ServerBasedChat.git`  
 
 ## SETUP AND CONFIGURATION
+### THIS CAN ALL BE PERFORMED WITH ONE COMMAND  
+The code below is in case this command does not work. The file `setup.sh` in the folder should be able to execute all of these commands below:  
+ `bash setup.sh`  
 
 ### THIS CAN ALL BE PERFORMED WITH ONE COMMAND  
 The code below is in case this command does not work. The file `setup.sh` in the folder should be able to execute all of these commands below:  
