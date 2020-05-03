@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Update the system (Issues with old SSL versions)
+# Update the system
 sudo apt-get update
 
 # Add repositories and update package list

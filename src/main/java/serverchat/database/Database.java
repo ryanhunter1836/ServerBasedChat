@@ -209,10 +209,10 @@ public class Database {
     }
 
     /**
-     * Returns chat session
-     * @param clientAID
-     * @param clientBID
-     * @return
+     * Obtains a chat session ID between two users
+     * @param clientAID The first ID of a client
+     * @param clientBID The second ID of a client
+     * @return The ID of the session
      */
     public Document getSession(String clientAID, String clientBID)
     {
