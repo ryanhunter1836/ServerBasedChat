@@ -123,8 +123,7 @@ public class Client implements Message
 			output.println(aes.encrypt(connectedMessage.message()));
 			//Receive CONNECTED message
 			String decodedString = aes.decrypt(input.readLine());
-			if(MessageFactory.decode(decodedString).messageType() != MessageType.CONNECTED)
-			{
+			if(MessageFactory.decode(decodedString).messageType() != MessageType.CONNECTED) {
 				return;
 			}
 
@@ -133,39 +132,40 @@ public class Client implements Message
 			boolean inChat = false;
 
 			// keep reading until "Log off" is input
-			while (!line.equals("Log off"))
-			{
-				line = scanner.nextLine();
+			while (!line.equals("Log off")) {
+				try {
+					clientSocket.setSoTimeout(60000);
+					line = scanner.nextLine();
 
-				//Check if this is a chat request
-				if(!inChat)
-				{
-					StringTokenizer tokenizer = new StringTokenizer(line);
-					if(tokenizer.nextToken().contains("Chat")) {
-						String clientId = tokenizer.nextToken();
-						EncodedMessage message = MessageFactory.encode(MessageType.CHAT_REQUEST, clientId);
-						output.println(aes.encrypt(message.message()));
+					//Check if this is a chat request
+					if (!inChat) {
+						StringTokenizer tokenizer = new StringTokenizer(line);
+						if (tokenizer.nextToken().contains("Chat")) {
+							String clientId = tokenizer.nextToken();
+							EncodedMessage message = MessageFactory.encode(MessageType.CHAT_REQUEST, clientId);
+							output.println(aes.encrypt(message.message()));
 
-						String test = input.readLine();
-						test = aes.decrypt(test);
+							String test = input.readLine();
+							test = aes.decrypt(test);
 
-						DecodedMessage chatResp = MessageFactory.decode(test);
-						if(chatResp.messageType() == MessageType.UNREACHABLE) {
-							System.out.println("Client is currently not online");
-						}
-						else {
-							inChat = true;
+							DecodedMessage chatResp = MessageFactory.decode(test);
+							if (chatResp.messageType() == MessageType.UNREACHABLE) {
+								System.out.println("Client is currently not online");
+							} else {
+								inChat = true;
+							}
 						}
 					}
 				}
+				catch(SocketException e) {
+					System.out.println("Socket Timeout. Logging off...");
+				}
 			}
 		}
-		catch(UnknownHostException u)
-		{
+		catch(UnknownHostException u) {
 			System.out.println(u);
 		}
-		catch(IOException i)
-		{
+		catch(IOException i) {
 			System.out.println(i);
 		}
 
