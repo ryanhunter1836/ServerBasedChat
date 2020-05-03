@@ -157,14 +157,44 @@ public class Client implements Message
 							StringTokenizer tokenizer = new StringTokenizer(line);
 							if (tokenizer.nextToken().contains("Chat")) {
 								String clientId = tokenizer.nextToken();
-								EncodedMessage message = MessageFactory.encode(MessageType.CHAT_REQUEST, clientId);
+								EncodedMessage message = MessageFactory.encode(MessageType.CHAT_REQUEST, clientId, "");
 								output.println(aes.encrypt(message.message()));
 								DecodedMessage chatResp = MessageFactory.decode(aes.decrypt(input.readLine()));
 								if (chatResp.messageType() == MessageType.UNREACHABLE) {
 									System.out.println("Correspondent unreachable");
 								} else {
 									inChat = true;
+									System.out.println("Chat started");
 								}
+							}
+						}
+					}
+
+					if(inChat) {
+						if(line.equals("End chat")) {
+							EncodedMessage message = MessageFactory.encode(MessageType.END_REQUEST, "");
+							output.println(aes.encrypt(message.message()));
+							System.out.println("Chat ended");
+							break;
+						}
+						//Send chat message to server
+						else {
+							EncodedMessage message = MessageFactory.encode(MessageType.CHAT, line);
+							output.println(aes.encrypt(message.message()));
+						}
+					}
+
+					if(line.contains("History")) {
+						StringTokenizer tokenizer = new StringTokenizer(line);
+						if(tokenizer.nextElement().equals("History")) {
+							EncodedMessage message = MessageFactory.encode(MessageType.HISTORY_REQ, tokenizer.nextToken(), "");
+							output.println(aes.encrypt(message.message()));
+							DecodedMessage historyResp = MessageFactory.decode(aes.decrypt(input.readLine()));
+							if(historyResp.messageType() != MessageType.HISTORY_RESP) {
+								break;
+							}
+							else {
+								System.out.println("History response");
 							}
 						}
 					}

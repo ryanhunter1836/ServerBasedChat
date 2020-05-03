@@ -102,10 +102,13 @@ public class ServerToClientConnectionInstance implements Runnable, Message
                 {
                     case CHAT_REQUEST:
                         startChatSession(message.getField("ClientID"));
+                        break;
                     case END_REQUEST:
                         endChatSession();
+                        break;
                     case CHAT:
                         sendChatMessage(message.getField("Message"));
+                        break;
                     case HISTORY_REQ:
                         sendChatHistory(message.getField("ClientID"));
                 }
