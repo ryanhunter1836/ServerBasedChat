@@ -208,6 +208,12 @@ public class Database {
         return true;
     }
 
+    /**
+     * Returns chat session
+     * @param clientAID
+     * @param clientBID
+     * @return
+     */
     public Document getSession(String clientAID, String clientBID)
     {
         MongoCollection<Document> sessionCollection = getSessionCollection();

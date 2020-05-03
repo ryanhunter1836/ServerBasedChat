@@ -4,6 +4,12 @@ import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import java.net.DatagramPacket;
 
+/**
+ * Decoded Message
+ * A class to decode messages sent from the server to the client
+ * @version 1
+ * @since 1.0-SNAPSHOT
+ */
 public class DecodedMessage implements Message
 {
     private MessageType messageType;
@@ -16,8 +22,11 @@ public class DecodedMessage implements Message
     public String message() { return message; }
     public String getField(String field) { return (String) json.get(field); }
 
-
-
+    /**
+     * Decoded Message constructor
+     * @param datagram
+     * @param standard
+     */
     public DecodedMessage(DatagramPacket datagram, boolean standard)
     {
         if(standard)

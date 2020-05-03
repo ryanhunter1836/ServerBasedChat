@@ -7,7 +7,12 @@ import java.io.*;
 import java.net.*;
 import java.util.HashMap;
 
-//Instance of a connection between server and client
+/**
+ * Server to Client Connection Instance
+ * A class that creates an instance of a connection between server and client
+ * @version 1
+ * @since 1.0-SNAPSHOT
+ */
 public class ServerToClientConnectionInstance implements Runnable, Message
 {
     private int portNumber;
@@ -20,7 +25,13 @@ public class ServerToClientConnectionInstance implements Runnable, Message
     PrintWriter out = null;
     int randCookie;
 
-    //Object to hold a connection between the server and the client
+    /**
+     * Object to hold a connection between the server and the client
+     * @param server
+     * @param portNumber
+     * @param clientID
+     * @param key
+     */
     public ServerToClientConnectionInstance(Server server, int portNumber, String clientID, String key)
     {
         this.portNumber = portNumber;
@@ -32,13 +43,19 @@ public class ServerToClientConnectionInstance implements Runnable, Message
         this.database = new Database();
     }
 
+    /**
+     * Gets username of client
+     * @return
+     */
     public String getUserName() {
     	return this.userName;
     }
     public boolean connected() { return clientConnected; }
 
     @Override
-    //Required for the runnable interface
+    /**
+     * Required for the runnable interface
+     */
     public void run()
     {
         //Open a TCP socket on a unique port number and wait for the client to connect
@@ -215,7 +232,12 @@ public class ServerToClientConnectionInstance implements Runnable, Message
         }
     }
 
-    //Implementation of chat sessions
+    /**
+     * Implementation of chat sessions
+     * @param in
+     * @param out
+     * @param recipient
+     */
     public void chat(BufferedReader in, PrintWriter out, String recipient)
     {
     	boolean isChatSessionActive = true;

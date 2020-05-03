@@ -4,6 +4,12 @@ import java.net.*;
 import java.io.*;
 import java.util.*;
 
+/**
+ * Client
+ * A class that establishes, authenticates, and connects clients
+ * @version 1
+ * @since 1.0-SNAPSHOT
+ */
 public class Client implements Message
 {
 	//Port number of authentication server
@@ -15,6 +21,13 @@ public class Client implements Message
 	 private final String serverIp;
 	 private AES aes;
 
+	/**
+	 * Client constructor
+	 * @param port
+	 * @param keyfilePath
+	 * @param serverIp
+	 * @throws FileNotFoundException
+	 */
 	public Client(int port, String keyfilePath, String serverIp) throws FileNotFoundException
 	{
 		portNumber = port;
@@ -27,7 +40,11 @@ public class Client implements Message
 		userID = scanner.nextLine();
 		secretKey = scanner.nextLine();
 	}
-	
+
+	/**
+	 * Starts client authentication process
+	 * @throws IOException
+	 */
 	public void startClient() throws IOException
 	{
     	boolean authenticated = authenticate(userID);
@@ -38,6 +55,12 @@ public class Client implements Message
 		}
 	}
 
+	/**
+	 * Authenticates client with the server
+	 * @param clientId
+	 * @return
+	 * @throws IOException
+	 */
 	private boolean authenticate(String clientId) throws IOException
 	{
 		DatagramSocket ds = new DatagramSocket();
@@ -56,15 +79,17 @@ public class Client implements Message
 		ds.receive(serverDatagram);
 
 		DecodedMessage decodedMessage = ((DecodedMessage) MessageFactory.decode(serverDatagram));
+
 		//Check to make sure it is a challenge message
 		if(decodedMessage.messageType() != MessageType.CHALLENGE)
 		{
 			return false;
 		}
 
+		// Get random number from challenge message
 		int randNum = Integer.parseInt(decodedMessage.message());
 		
-		// Get XRES using random num and private key
+		// Get RES using random num and private key
 		String RES = SecretKeyGenerator.hash1(randNum+secretKey); // get user input to verify
 		//Also generate the encryption key
 		String encryptionKey = SecretKeyGenerator.hash2(randNum+secretKey);
@@ -99,6 +124,9 @@ public class Client implements Message
 		}
 	}
 
+	/**
+	 * Starts chat session once clients are authenticated
+	 */
 	private void startChatSession ()
 	{
 		Socket clientSocket = null;

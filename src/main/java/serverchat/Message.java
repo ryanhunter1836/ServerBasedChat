@@ -1,6 +1,9 @@
 package main.java.serverchat;
 
-//Interface to implement message framing and
+/**
+ * Message
+ * An interface that packages a message into the messaging protocol
+ */
 public interface Message
 {
     public enum MessageType

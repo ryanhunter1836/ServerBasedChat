@@ -10,6 +10,12 @@ import java.util.concurrent.*;
 
 import java.io.*;
 
+/**
+ * Server
+ * A class that contains a server that runs our chat service
+ * @version 1
+ * @since 1.0-SNAPSHOT
+ */
 public class Server implements Message
 {
     int portNumber;
@@ -21,6 +27,10 @@ public class Server implements Message
 
     private final ExecutorService threadPool;
 
+    /**
+     * Server constructor
+     * @param port
+     */
     public Server(int port)
     {
         portNumber = port;
@@ -31,7 +41,11 @@ public class Server implements Message
         connectedClients = new Hashtable<>();
     }
 
-    //Entry point for the UDP authentication server
+    /**
+     * Entry point for the UDP authentication server
+     * @throws IOException
+     * @throws UnknownHostException
+     */
     public void start() throws IOException, UnknownHostException
     {
         System.out.println("IP Address of Server: " + InetAddress.getLocalHost());
@@ -59,6 +73,7 @@ public class Server implements Message
             }
 
             String XRES;
+
             //Generate the challenge
             int rand = (random.nextInt()*10000) + 10000; //generates a random number to confirm
             try
@@ -155,6 +170,13 @@ public class Server implements Message
         return XRES;
     }
 
+    /**
+     * Sends the authentication results to the clients for verification
+     * @param datagram
+     * @param authSuccessful
+     * @param rand
+     * @throws IOException
+     */
     private void sendAuthResult(DatagramPacket datagram, boolean authSuccessful, int rand) throws IOException {
         DatagramPacket authDatagram;
         EncodedMessage message;
@@ -209,7 +231,11 @@ public class Server implements Message
         ds.send(authDatagram);
     }
 
-    //Returns the routing information for the request client
+    /**
+     * Returns the routing information for the request client
+     * @param clientId
+     * @return
+     */
     private ServerToClientConnectionInstance getClientTask(String clientId)
     {
         return connectedClients.get(clientId);
@@ -225,19 +251,27 @@ public class Server implements Message
         client.receiveMessage(message);
     }
 
-    //Method called when a connection terminates
+    /**
+     * Method called when a connection terminates
+     * @param clientId
+     */
     public void disconnect(String clientId)
     {
         connectedClients.remove(clientId);
     }
-    
-    //Call the stop method to gracefully shutdown the server
+
+    /**
+     * Call the stop method to gracefully shutdown the server
+     */
     public void stop()
     {
         shutdownAndAwaitTermination(threadPool);
     }
 
-    //Dispose of the thread pool and close any lingering connections.  Copied from documentation
+    /**
+     * Dispose of the thread pool and close any lingering connections
+     * @param pool
+     */
     private void shutdownAndAwaitTermination(ExecutorService pool)
     {
         pool.shutdown(); // Disable new tasks from being submitted
@@ -248,6 +282,7 @@ public class Server implements Message
             {
                 pool.shutdownNow();
                 // Cancel currently executing tasks
+
                 // Wait a while for tasks to respond to being cancelled
                 if (!pool.awaitTermination(60, TimeUnit.SECONDS))
                 {

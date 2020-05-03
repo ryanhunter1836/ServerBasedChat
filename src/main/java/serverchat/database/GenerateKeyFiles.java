@@ -6,8 +6,16 @@ import java.io.FileWriter;
 import java.io.IOError;
 import java.io.IOException;
 
-//Generates the private key files to be used by the clients
+/**
+ * Generate Key Files
+ * A class that generates the private key files to be used by the clients
+ */
 public class GenerateKeyFiles {
+
+    /**
+     * Driver function
+     * @param args
+     */
     public static void main(String args[]) {
         Database db = new Database();
 

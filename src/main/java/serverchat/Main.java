@@ -3,8 +3,18 @@ package main.java.serverchat;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+/**
+ * Main
+ * A class that acts as the main driver for the project
+ * @version 1
+ * @since 1.0-SNAPSHOT
+ */
 public class Main
 {
+    /**
+     * Driver function
+     * @param args
+     */
     public static void main(String[] args)
     {
         //Run as a server
@@ -16,6 +26,8 @@ public class Main
             }
 
             int portNumber = Integer.parseInt(args[1]);
+
+            // Initialize and start server
             System.out.println("Starting server on port " + portNumber);
             Server server = new Server(portNumber);
             try
