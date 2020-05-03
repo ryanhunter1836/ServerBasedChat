@@ -169,7 +169,6 @@ public class Client implements Message
 	 * @param response The response to parse
 	 */
 	public void parseResponse(DecodedMessage response) {
-		System.out.println("Parse response " + response.messageType());
 		switch (response.messageType()) {
 			case CHAT_STARTED:
 				System.out.println("A chat has started with " + response.getField("ClientID"));
