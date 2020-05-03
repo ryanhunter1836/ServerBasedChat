@@ -6,12 +6,12 @@ import java.util.HashMap;
 //Factory to encode and decode messages
 public class MessageFactory implements Message
 {
-    public static Message encode(MessageType messageType, String clientId, String content)
+    public static EncodedMessage encode(MessageType messageType, String clientId, String content)
     {
         return new EncodedMessage(messageType, clientId, content);
     }
 
-    public static Message encode(MessageType messageType, String content)
+    public static EncodedMessage encode(MessageType messageType, String content)
     {
         return new EncodedMessage(messageType, "_", content);
     }
@@ -25,12 +25,13 @@ public class MessageFactory implements Message
         return new EncodedMessage(entries);
     }
 
-    public static Message getDecodedMessageObj(DatagramPacket datagram) { return new DecodedMessage(datagram); }
+    public static DecodedMessage getDecodedMessageObj(DatagramPacket datagram) { return new DecodedMessage(datagram, false); }
+    public static DecodedMessage getDecodedMessageObj(String message) { return new DecodedMessage(message, false); }
 
-    public static Message decode(DatagramPacket datagram)
+    public static DecodedMessage decode(DatagramPacket datagram)
     {
         String message = new String(datagram.getData(), 0, datagram.getLength());
-        return new DecodedMessage(message);
+        return new DecodedMessage(message, true);
     }
 
     /**
@@ -40,6 +41,6 @@ public class MessageFactory implements Message
      */
     public static DecodedMessage decode(String message)
     {
-        return new DecodedMessage(message);
+        return new DecodedMessage(message, true);
     }
 }

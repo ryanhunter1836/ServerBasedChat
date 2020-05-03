@@ -31,18 +31,18 @@ public class Main
         //Run as a client
         else if(args[0].contains("client"))
         {
-            if(args.length != 3)
+            if(args.length != 4)
             {
                 System.out.println("Incorrect number of arguments supplied");
             }
 
             int portNumber = Integer.parseInt(args[1]);
             String keyfilePath = args[2];
-            System.out.println("Client connecting on port " + portNumber);
+            String serverIp = args[3];
             Client client;
             try
             {
-                client = new Client(portNumber, keyfilePath);
+                client = new Client(portNumber, keyfilePath, serverIp);
                 client.startClient();
             }
             catch(IOException e)

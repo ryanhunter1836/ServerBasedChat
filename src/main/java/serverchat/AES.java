@@ -2,8 +2,13 @@ package main.java.serverchat;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.Random;
 
 /**
  * AES
@@ -20,8 +25,15 @@ public class AES {
      * Creates an AES object that holds the given key as a private key
      * @param key The key represented by a string
      */
-    public AES(String key) {
-        secretKey = new SecretKeySpec(key.getBytes(), "AES");
+    public AES(String key)
+    {
+        try
+        {
+            MessageDigest sha = MessageDigest.getInstance("SHA-1");
+            byte[] keyBytes = sha.digest(key.getBytes());
+            keyBytes = Arrays.copyOf(keyBytes, 16); // use only first 128 bit
+            secretKey = new SecretKeySpec(keyBytes, "AES");
+        } catch(NoSuchAlgorithmException e) {}
     }
 
     /**
@@ -29,13 +41,13 @@ public class AES {
      * @param message The message to encrypt
      * @return The message in a base64 encrypted format
      */
-    public String encrypt(byte[] message) {
+    public String encrypt(String message) {
         byte[] encryptedMessage;
 
         try {
-            Cipher cipher = Cipher.getInstance("AES");
+            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
             cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-            encryptedMessage = cipher.doFinal(message);
+            encryptedMessage = cipher.doFinal(message.getBytes());
         } catch (Exception e) {
             System.out.println("Ran into issues encrypting via AES.");
             return null;
@@ -53,7 +65,7 @@ public class AES {
         byte[] decryptedMessage;
 
         try {
-            Cipher cipher = Cipher.getInstance("AES");
+            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
             cipher.init(Cipher.DECRYPT_MODE, secretKey);
             decryptedMessage = cipher.doFinal(Base64.getDecoder().decode(message));
         } catch (Exception e) {

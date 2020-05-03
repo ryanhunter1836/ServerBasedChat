@@ -8,18 +8,18 @@ import java.util.HashMap;
 //Packages a message into the messaging protocol
 public class EncodedMessage implements Message
 {
-    //Byte array of the encoded message
-    private byte[] encodedMessage;
+    private String jsonString;
 
-    public byte[] encodedMessage() { return encodedMessage; }
+    public String message() { return jsonString; }
+    public byte[] encodedMessage() { return jsonString.getBytes(); }
 
     public EncodedMessage(MessageType messageType, String clientId, String message)
     {
         JSONObject jsonMessage = new JSONObject();
-        jsonMessage.put("MessageType", messageType.ordinal());
+        jsonMessage.put("MessageType", Integer.toString(messageType.ordinal()));
         jsonMessage.put("ClientID", clientId);
         jsonMessage.put("Message", message);
-        encodedMessage = jsonMessage.toJSONString().getBytes();
+        jsonString = jsonMessage.toJSONString();
     }
 
     /**
@@ -28,6 +28,6 @@ public class EncodedMessage implements Message
      */
     public EncodedMessage(HashMap<String, String> entries) {
         JSONObject jsonMessage = new JSONObject(entries);
-        encodedMessage = jsonMessage.toJSONString().getBytes();
+        jsonString = jsonMessage.toJSONString();
     }
 }
