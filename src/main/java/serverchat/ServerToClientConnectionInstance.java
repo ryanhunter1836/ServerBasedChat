@@ -195,7 +195,7 @@ public class ServerToClientConnectionInstance implements Runnable, Message
             // Send an UNREACHABLE response to the client if the other client is not accessible
             HashMap<String, String> unreachableMessage = new HashMap<>();
             unreachableMessage.put("MessageType", Integer.toString(MessageType.UNREACHABLE.ordinal()));
-            unreachableMessage.put("ClientID", userName);
+            unreachableMessage.put("ClientID", clientID);
             EncodedMessage encodedMessage = MessageFactory.encode(unreachableMessage);
             receiveMessage(encodedMessage);
         }
