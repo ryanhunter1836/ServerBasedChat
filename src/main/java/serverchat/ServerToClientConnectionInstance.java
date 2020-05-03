@@ -93,6 +93,10 @@ public class ServerToClientConnectionInstance implements Runnable, Message
                     clientConnected = true;
                 }
 
+                System.out.println("Received message from: " + userName);
+                System.out.println(message.messageType());
+                System.out.println(message.message() + "\n");
+
                 if (message.message().equals("Log off"))
                 {
                     break;
@@ -102,12 +106,19 @@ public class ServerToClientConnectionInstance implements Runnable, Message
                 {
                     case CHAT_REQUEST:
                         startChatSession(message.getField("ClientID"));
+                        break;
+
                     case END_REQUEST:
                         endChatSession();
+                        break;
+
                     case CHAT:
                         sendChatMessage(message.getField("Message"));
+                        break;
+
                     case HISTORY_REQ:
                         sendChatHistory(message.getField("ClientID"));
+                        break;
                 }
             }
             in.close();
@@ -131,6 +142,19 @@ public class ServerToClientConnectionInstance implements Runnable, Message
         //Guard against sending a message to a disconnected client
         if(clientConnected && out != null)
         {
+            // Set up a new session if we received info for it
+            if (message.json().get("MessageType").equals("8"))
+            {
+                sessionInfo[0] = (String)message.json().get("SessionID");
+                sessionInfo[1] = (String)message.json().get("ClientID");
+            }
+            // End the session if we received info for it
+            else if (message.json().get("MessageType").equals("11"))
+            {
+                sessionInfo[0] = "";
+                sessionInfo[1] = "";
+            }
+
             // Encrypt the message and send the message
             out.println(aes.encrypt(message.message()));
         }
@@ -148,6 +172,8 @@ public class ServerToClientConnectionInstance implements Runnable, Message
             // Mark the clients in the database as connected to each other
             sessionInfo[0] = database.connectClients(userName, clientID);
             sessionInfo[1] = clientID;
+
+            System.out.println("Start chat session " + sessionInfo[1]);
 
             // Send a CHAT_STARTED response to both clients indicating a connection
             HashMap<String, String> startedMessage = new HashMap<>();

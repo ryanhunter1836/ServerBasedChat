@@ -13,9 +13,11 @@ import java.util.HashMap;
  */
 public class EncodedMessage implements Message
 {
+    private JSONObject json;
     private String jsonString;
 
     // Get jsonString
+    public JSONObject json() { return json; }
     public String message() { return jsonString; }
     public byte[] encodedMessage() { return jsonString.getBytes(); }
 
@@ -31,6 +33,7 @@ public class EncodedMessage implements Message
         jsonMessage.put("MessageType", Integer.toString(messageType.ordinal()));
         jsonMessage.put("ClientID", clientId);
         jsonMessage.put("Message", message);
+        json = jsonMessage;
         jsonString = jsonMessage.toJSONString();
     }
 
@@ -40,6 +43,7 @@ public class EncodedMessage implements Message
      */
     public EncodedMessage(HashMap<String, String> entries) {
         JSONObject jsonMessage = new JSONObject(entries);
+        json = jsonMessage;
         jsonString = jsonMessage.toJSONString();
     }
 }

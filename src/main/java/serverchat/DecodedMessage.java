@@ -39,14 +39,14 @@ public class DecodedMessage implements Message
             try {
                 this.message = (String)json.get("Message");
             } catch (Exception e) {
-                this.message = null;
+                this.message = "";
             }
 
             // Attempt to get the "ClientID" field
             try {
                 this.clientId = (String)json.get("ClientID");
             } catch (Exception e) {
-                this.clientId = null;
+                this.clientId = "";
             }
         }
         else
@@ -54,6 +54,12 @@ public class DecodedMessage implements Message
             json = (JSONObject)JSONValue.parse(new String(datagram.getData(), 0, datagram.getLength()));
             int messageTypeIndex = Integer.parseInt((String)json.get("MessageType"));
             messageType = MessageType.values()[messageTypeIndex];
+            this.message = "";
+            this.clientId = "";
+        }
+        // Hot fix
+        if (this.message == null) {
+            this.message = "";
         }
     }
 
@@ -73,14 +79,14 @@ public class DecodedMessage implements Message
             try {
                 this.message = (String)json.get("Message");
             } catch (Exception e) {
-                this.message = null;
+                this.message = "";
             }
 
             // Attempt to get the "ClientID" field
             try {
                 this.clientId = (String)json.get("ClientID");
             } catch (Exception e) {
-                this.clientId = null;
+                this.clientId = "";
             }
         }
         else
@@ -88,7 +94,12 @@ public class DecodedMessage implements Message
             json = (JSONObject)JSONValue.parse(message);
             int messageTypeIndex = Integer.parseInt((String)json.get("MessageType"));
             messageType = MessageType.values()[messageTypeIndex];
+            this.message = "";
+            this.clientId = "";
         }
-
+        // Hot fix
+        if (this.message == null) {
+            this.message = "";
+        }
     }
 }

@@ -248,6 +248,8 @@ public class Server implements Message
      */
     public void sendMessageToClient(EncodedMessage message, String clientID) {
         ServerToClientConnectionInstance client = getClientTask(clientID);
+        System.out.println("Send message to client " + clientID);
+        System.out.println("Send message to client " + message.message() + "\n");
         client.receiveMessage(message);
     }
 
