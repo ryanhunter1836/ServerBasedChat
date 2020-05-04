@@ -7,7 +7,7 @@ You can either download the .zip file from GitHub or you can clone it using the 
 ## SETUP AND CONFIGURATION
 ### THIS CAN ALL BE PERFORMED WITH ONE COMMAND  
 The code below is in case this command does not work. The file `setup.sh` in the folder should be able to execute all of these commands below:  
- `bash setup.sh`  
+ `sudo bash setup.sh`  
 
 ### THIS CAN ALL BE PERFORMED WITH ONE COMMAND  
 The code below is in case this command does not work. The file `setup.sh` in the folder should be able to execute all of these commands below:  
@@ -52,10 +52,12 @@ To get this running on mininet:
  `gradle buildJarDatabaseInit`  
   
 ## TO RUN:  
-To run in server mode:  
-pass in arguments `server <port number>` when running `Main.java`  
+To run in server mode:    
 `java -jar <jarfile> server <port number>`  
+Some example code: `java -jar ./server_client-1.0-SNAPSHOT.jar server 4040`  
+In return, the server will return the IP address so the client can connect to it.
   
 To run in client mode:  
-pass in arguments `client <port number>` and `<key path>` when running  `Main.java`. `<key path>` is the path where the keys of the users are held (for example, the path can be `./database/key1.txt`).  
-`java -jar <jarfile> client <port number> <key path>`  
+`<key path>` is the path where the keys of the users are held after running `bash setup.sh` (for example, the path can be `./Client-ID-B-key`).  
+`java -jar <jarfile> client <port number> <key path> <server IP>`  
+For example: `java -jar ./server_client-1.0-SNAPSHOT.jar client 4040 ./Client-ID-B-key 192.168.48.177`
