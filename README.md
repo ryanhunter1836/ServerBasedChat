@@ -14,6 +14,8 @@ MongoDB was chosen in order to be a compromise since there was a desire to have 
 
 Installation of MongoDB server onto mininet, taken from https://docs.mongodb.com/v4.0/tutorial/install-mongodb-on-ubuntu/: 
 
+  `sudo apt-get update `
+
   `wget -qO - https://www.mongodb.org/static/pgp/server-4.0.asc | sudo apt-key add - `  
   
   `echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu trusty/mongodb-org/4.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.0.list`  
@@ -48,12 +50,17 @@ To get this running on mininet:
  `gradle buildJarDatabaseInit`  
   
 ## TO RUN:  
+Before the first run, the database needs to be seeded and keyfiles generated.
+`java -jar database_init-1.0-SNAPSHOT.jar`
+The database will be seeded and 10 corresponding keyfiles will be generated
+
+The server needs to be started before any clients can connect
 To run in server mode:    
 `java -jar <jarfile> server <port number>`  
-Some example code: `java -jar ./server_client-1.0-SNAPSHOT.jar server 4040`  
+Some example code: `java -jar server_client-1.0-SNAPSHOT.jar server 4040`  
 In return, the server will return the IP address so the client can connect to it.
   
 To run in client mode:  
-`<key path>` is the path where the keys of the users are held after running `bash setup.sh` (for example, the path can be `./Client-ID-B-key`).  
+`<key path>` is the path where the keys of the users are held after generating the keyfiles (for example, the path can be `Client-ID-B-key`).  
 `java -jar <jarfile> client <port number> <key path> <server IP>`  
-For example: `java -jar ./server_client-1.0-SNAPSHOT.jar client 4040 ./Client-ID-B-key 192.168.48.177`
+For example: `java -jar server_client-1.0-SNAPSHOT.jar client 4040 Client-ID-B-key 192.168.48.177`
