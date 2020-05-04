@@ -7,11 +7,7 @@ You can either download the .zip file from GitHub or you can clone it using the 
 ## SETUP AND CONFIGURATION
 ### THIS CAN ALL BE PERFORMED WITH ONE COMMAND  
 The code below is in case this command does not work. The file `setup.sh` in the folder should be able to execute all of these commands below:  
- `sudo bash setup.sh`  
-
-### THIS CAN ALL BE PERFORMED WITH ONE COMMAND  
-The code below is in case this command does not work. The file `setup.sh` in the folder should be able to execute all of these commands below:  
- `bash setup.sh`  
+ `bash setup.sh`   
 
 ### Configuring database  
 MongoDB was chosen in order to be a compromise since there was a desire to have both flat files and a database management system. The most recent version that can run on mininet is 4.0.18. 
@@ -48,7 +44,7 @@ To get this running on mininet:
  If installed correcctly, the daemon for MongoDB should be up and running once installed. To check, type:  
  `sudo systemctl status mongodbd`  
  As for Gradle, we need to build the jar file for the dependencies to be handled. To build the jar file, type:  
- `gradle buildJar`
+ `gradle buildJar`  
  `gradle buildJarDatabaseInit`  
   
 ## TO RUN:  
